@@ -45,7 +45,9 @@ log "AFR samples: $n_afr of $n_all; $n_rel_afr of them are on the related-sample
 
 # 2. AFR minus related samples; autosomes; biallelic ACGT SNPs; fill missing IDs.
 # shellcheck disable=SC2016 # $r and $a are plink2 template fields, not shell variables
-plink --pfile "$in" --keep "$DATA_DIR/afr_keep.txt" --remove "$rel" \
+# --pfile does not find a .pvar.zst on its own, so name the three files.
+plink --pgen "$in.pgen" --pvar "$in.pvar.zst" --psam "$in.psam" \
+	--keep "$DATA_DIR/afr_keep.txt" --remove "$rel" \
 	--autosome --snps-only just-acgt --max-alleles 2 \
 	--set-missing-var-ids '@:#:$r:$a' \
 	--make-pgen --out "$DATA_DIR/afr_step1"
