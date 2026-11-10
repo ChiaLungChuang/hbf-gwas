@@ -159,12 +159,17 @@ def build(out_dir: Path, plink2: str = "plink2", zstd: str = "zstd", seed: int =
             )
 
     prefix = work / "all_phase3"
-    subprocess.run(
+    r = subprocess.run(
         [plink2, "--vcf", str(vcf), "--make-pgen", "--out", str(prefix)],
-        check=True,
         capture_output=True,
         text=True,
     )
+    if r.returncode != 0:
+        log = Path(f"{prefix}.log")
+        raise RuntimeError(
+            f"plink2 --vcf failed ({r.returncode})\nSTDOUT:\n{r.stdout}\nSTDERR:\n{r.stderr}\n"
+            + (f"LOG:\n{log.read_text()}" if log.exists() else "")
+        )
     with open(f"{prefix}.psam", "w") as fh:
         fh.write("#IID\tPAT\tMAT\tSEX\tSuperPop\tPopulation\n")
         for iid, pop, sup, sex in samples:
