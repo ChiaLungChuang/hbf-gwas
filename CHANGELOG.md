@@ -20,3 +20,9 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   phenotype (planted effects, subpopulation shift, noise) that accepts real
   genotype matrices and many repetitions at once. Calibration tests fail if
   the simulation stops producing structure.
+- Item 5 `hbfgwas.assoc`: vectorised additive linear regression with
+  covariates (Frisch-Waugh-Lovell, t-distribution p-values, many phenotypes
+  at once), exact PCA of the standardised genotype matrix, lambda_GC, type I
+  error, empirical power, QQ plot with a pointwise band, a plink2 `--glm`
+  reader, and `compare_to_plink2` (allele-flip aware, tolerance on BETA and
+  -log10 P).
