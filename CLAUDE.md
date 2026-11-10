@@ -31,3 +31,13 @@ been decided and where the work stands, and check the open GitHub issues.
 - Phase gates: stop after Phase 1 and report; do not start Phase 2 until the
   user replies. Inside Phase 2, stop and wait at every point the addendum
   names.
+
+## Commands
+
+```bash
+/opt/homebrew/bin/python3.12 -m venv .venv && .venv/bin/pip install -e ".[dev]"
+.venv/bin/python -m pytest              # unit tests (plink2 tests skip without plink2)
+.venv/bin/python -m pytest -m realdata  # real-data readiness; fails until loci are signed off
+.venv/bin/ruff check . && .venv/bin/ruff format --check .
+.venv/bin/python scripts/check_language.py --commits
+```
