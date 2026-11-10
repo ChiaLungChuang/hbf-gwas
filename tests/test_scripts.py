@@ -268,6 +268,8 @@ def test_e2e_association_outputs(e2e):
 
 def test_e2e_report_and_plink2_concordance(e2e):
     res = json.loads((e2e["run"] / "results.json").read_text())
+    print(json.dumps({k: res[k] for k in ("unadjusted", "adjusted", "concordance")}, indent=1))
+    print(pd.read_csv(e2e["run"] / "qc_filters.tsv", sep="\t").to_string(index=False))
     assert res["concordance"]["passed"], res["concordance"]
     for side in ("unadjusted", "adjusted"):
         assert res["concordance"][side]["n_compared"] >= 300
