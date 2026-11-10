@@ -101,14 +101,18 @@ class RawGenotypes:
 def read_raw(path) -> RawGenotypes:
     """plink2 --export A: FID IID PAT MAT SEX PHENOTYPE then <ID>_<counted allele> columns."""
     df = pd.read_csv(path, sep=r"\s+", dtype=str)
-    variant_cols = list(df.columns[6:])
+    cols = list(df.columns)
+    if "IID" not in cols or "PHENOTYPE" not in cols:
+        raise ValueError(f"{path}: expected IID and PHENOTYPE columns in a plink2 .raw file")
+    variant_cols = cols[cols.index("PHENOTYPE") + 1 :]
     ids, counted = [], []
     for col in variant_cols:
         vid, allele = col.rsplit("_", 1)
         ids.append(vid)
         counted.append(allele)
     geno = df[variant_cols].apply(pd.to_numeric, errors="coerce").to_numpy(dtype=float)
-    return RawGenotypes(df.iloc[:, 0].to_numpy(), df.iloc[:, 1].to_numpy(), ids, counted, geno)
+    fid = df["FID"].to_numpy() if "FID" in cols else df["IID"].to_numpy()
+    return RawGenotypes(fid, df["IID"].to_numpy(), ids, counted, geno)
 
 
 # --- sentinels ---------------------------------------------------------------
