@@ -50,3 +50,6 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   (all entries unverified), and `tests/synthetic_1kg.py`, a synthetic
   plink2 fileset on which CI runs 00 -> 05 end to end with a pinned official
   plink2 build. Not run on real data.
+- Item 9 README (claim and non-claim first; status table with separate
+  simulated-genotype and real-genotype columns, the real column "not yet
+  run") and `docs/running-real-data.md` (Phase 2 walkthrough).
