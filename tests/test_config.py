@@ -84,3 +84,17 @@ def test_planted_loci_match_the_locus_table():
     names = [p["locus"] for p in CFG["simulated_experiment"]["planted"]]
     assert names == [loc.gene.value for loc in LOCI]
     assert np.all([0 < p["ancestral_freq"] < 1 for p in CFG["simulated_experiment"]["planted"]])
+
+
+def test_planted_effects_agree_between_sections():
+    effects = {e["locus"]: e for e in CFG["planted_effects"]}
+    for planted in CFG["simulated_experiment"]["planted"]:
+        assert planted["beta_sd"] == effects[planted["locus"]]["beta_sd"]
+
+
+def test_planted_effect_alleles_match_the_locus_table():
+    from hbfgwas.loci import LOCI
+
+    table = {loc.gene.value: loc.effect_allele.value for loc in LOCI}
+    for e in CFG["planted_effects"]:
+        assert e["effect_allele"] == table[e["locus"]]
