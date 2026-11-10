@@ -187,8 +187,20 @@ def empirical_power(p_planted, threshold: float = 5e-8) -> np.ndarray:
     return np.mean(p < threshold, axis=1)
 
 
-def qq_plot(ax, p, title: str | None = None, ci: float = 0.95, color: str = "C0", label=None):
-    """QQ plot of -log10 p against the uniform expectation, with a pointwise band."""
+def qq_plot(
+    ax,
+    p,
+    title: str | None = None,
+    ci: float = 0.95,
+    color: str = "C0",
+    label=None,
+    max_points: int | None = None,
+):
+    """QQ plot of -log10 p against the uniform expectation, with a pointwise band.
+
+    ``max_points`` thins what is drawn (never what is computed): the 10,000
+    smallest p-values are always drawn, the rest evenly subsampled.
+    """
     p = np.asarray(p, dtype=float).ravel()
     p = np.sort(p[np.isfinite(p) & (p > 0)])
     n = p.size
@@ -197,10 +209,17 @@ def qq_plot(ax, p, title: str | None = None, ci: float = 0.95, color: str = "C0"
     observed = -np.log10(p)
     lo = -np.log10(stats.beta.ppf((1 + ci) / 2, i, n - i + 1))
     hi = -np.log10(stats.beta.ppf((1 - ci) / 2, i, n - i + 1))
-    ax.fill_between(expected, lo, hi, color="0.85", lw=0, label=f"{int(ci * 100)}% band")
+    draw = np.arange(n)
+    if max_points is not None and n > max_points:
+        top_k = min(10_000, max_points // 2)
+        rest = np.linspace(top_k, n - 1, max_points - top_k).astype(int)
+        draw = np.unique(np.concatenate([np.arange(top_k), rest]))
+    ax.fill_between(
+        expected[draw], lo[draw], hi[draw], color="0.85", lw=0, label=f"{int(ci * 100)}% band"
+    )
     top = max(expected.max(), observed.max())
     ax.plot([0, top], [0, top], color="0.4", lw=0.8, ls="--")
-    ax.scatter(expected, observed, s=4, color=color, label=label, rasterized=True)
+    ax.scatter(expected[draw], observed[draw], s=4, color=color, label=label, rasterized=True)
     ax.set_xlabel(r"expected $-\log_{10} p$")
     ax.set_ylabel(r"observed $-\log_{10} p$")
     lam = lambda_gc(p)
