@@ -61,8 +61,9 @@ def test_conditional_power_matches_monte_carlo(scenario, adjusted):
     )
     emp, reps = _empirical(s, cov)
     for j, p in enumerate(pred):
-        se = np.sqrt(max(p["power"] * (1 - p["power"]), 1e-4) / reps)
-        assert abs(emp[j] - p["power"]) < 4 * se + 0.005, (j, emp[j], p["power"])
+        se_emp = np.sqrt(max(p["power"] * (1 - p["power"]), 1e-4) / reps)
+        se = np.hypot(se_emp, p["power_mc_se"])
+        assert abs(emp[j] - p["power"]) < 4 * se, (j, emp[j], p["power"], se)
 
 
 def test_leakage_from_a_correlated_planted_locus():

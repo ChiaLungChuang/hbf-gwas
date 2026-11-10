@@ -148,6 +148,25 @@ def expected_null_chi2(
     return 1.0 + 2.0 * n * fst * shift_var_fraction / (k * (1.0 + fst * (1.0 - 2.0 / k)))
 
 
+def scale_shift_draws(draws: np.ndarray, idx: np.ndarray, shift_var_fraction: float):
+    """Turn N(0, 1) subpopulation draws (reps, K) into individual-level shifts.
+
+    Each repetition is centred over individuals and scaled so its variance is
+    exactly ``shift_var_fraction``. Returns (shift (n, reps), pop_means (K, reps)).
+    Shared by ``simulate_phenotype`` and ``hbfgwas.predict`` so both use one law.
+    """
+    reps = draws.shape[0]
+    shift = np.zeros((idx.size, reps))
+    pop_means = np.zeros((draws.shape[1], reps))
+    for r in range(reps):
+        s = draws[r][idx]
+        centre = s.mean()
+        scale = np.sqrt(shift_var_fraction / (s - centre).var())
+        shift[:, r] = (s - centre) * scale
+        pop_means[:, r] = (draws[r] - centre) * scale
+    return shift, pop_means
+
+
 def _validate_genotypes(genotypes) -> np.ndarray:
     g = np.asarray(genotypes, dtype=float)
     if g.ndim == 1:
@@ -225,12 +244,7 @@ def simulate_phenotype(
     pop_means = np.zeros((labels.size, reps))
     if shift_var_fraction > 0:
         draws = rng.standard_normal((reps, labels.size))
-        for r in range(reps):
-            s = draws[r][idx]
-            s = s - s.mean()
-            scale = np.sqrt(shift_var_fraction / s.var())
-            shift[:, r] = s * scale
-            pop_means[:, r] = (draws[r] - draws[r][idx].mean()) * scale
+        shift, pop_means = scale_shift_draws(draws, idx, shift_var_fraction)
     noise = rng.standard_normal((n, reps)) * np.sqrt(noise_var)
 
     r2_realized = (betas[None, :] * g).var(axis=0)
