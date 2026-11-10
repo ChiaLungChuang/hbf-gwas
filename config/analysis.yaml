@@ -14,9 +14,12 @@
 # =============================================================================
 
 prereg:
-  version: sim-v1
+  version: sim-v2
   declared: "2026-11-10"
   status: simulated-genotype criteria declared; real-data criteria pending (Phase 2 step d)
+  history:
+    - "sim-v1: declared and run 2026-11-10 (config commit f63e8bd; runs/2026-11-10-sim-stratification)"
+    - "sim-v2: power check redesigned after seeing the sim-v1 result, as the user approved in issue #10 (docs/decisions.md D-020 to D-023)"
 
 # --- QC (scripts/02_qc.sh), applied one filter at a time in this order -------
 qc:
@@ -57,9 +60,11 @@ concordance:
   n_random_variants: 2000 # plus every planted sentinel
 
 seeds:
-  sim_genotypes: 20261101
-  sim_phenotype: 20261102
-  sim_power_reps: 20261103
+  sim_genotypes: 20261101 # unchanged since sim-v1
+  sim_phenotype: 20261102 # unchanged since sim-v1: the one genome-wide scan
+  sim_power_reps: 20261103 # sim-v1 only (1000 redraws); kept for the record
+  sim_power_reps_v2: 20261104 # sim-v2: 2000 redraws at the planted variants
+  sim_prediction: 20261105 # shift draws averaged inside the conditional power prediction
   real_phenotype: 20261201
   real_concordance_sample: 20261202
 
@@ -94,10 +99,12 @@ simulated_experiment:
   # it is not an estimate of any real HbF difference between populations.
   shift_var_fraction: 0.2
   n_pcs: 10
-  power_reps: 1000 # phenotype redraws for empirical power (secondary outcome)
-  # Planted variants: ancestral frequency of the effect allele, and the variance
-  # explained r2 = 2 p (1 - p) beta_sd^2. simulate_phenotype(r2=...) sets each
-  # beta so the realized variance in the sample equals r2 exactly.
+  # sim-v2 plants the per-allele effect beta_sd directly (as on real genotypes);
+  # sim-v1 fixed r2 instead. r2 below is the variance explained at the
+  # ancestral frequency, 2 p (1 - p) beta_sd^2: informational only.
+  planted_effect_mode: beta
+  power_reps: 2000 # phenotype redraws, tested at the planted variants only
+  prediction_shift_draws: 2000 # shift draws averaged by hbfgwas.predict.conditional_power
   planted:
     - locus: BCL11A
       beta_sd: 0.456435
@@ -114,17 +121,25 @@ simulated_experiment:
       ancestral_freq: 0.1238
       ancestral_freq_source: "gnomAD exomes AFR, A allele, via Ensembl GRCh37 (no 1000 Genomes phase 3 value exists)"
       r2: 0.035937
-  # Analytic predictions computed from the parameters above before any run
-  # (hbfgwas.simulate.expected_null_chi2, hbfgwas.power.power with n = 650,
-  # alpha = 5e-8, covariate_r2 = shift_var_fraction, i.e. assuming the PCs
-  # absorb the shift). Informational except power_pc_adjusted, which decides
-  # which loci are REQUIRED below.
   predicted:
+    # hbfgwas.simulate.expected_null_chi2 (declared in sim-v1); informational
     unadjusted_lambda_gc: 1.3688
-    power_pc_adjusted:
+    # sim-v1 predictions (hbfgwas.power: noncentral chi-square, partial R2 assuming
+    # the PCs absorb the shift); superseded, kept for reference (docs/power.md)
+    unconditional_power_pc_adjusted:
       BCL11A: 0.9973
       HBS1L-MYB: 0.2181
       HBB cluster: 0.5310
+    # sim-v2 predictions: hbfgwas.predict.conditional_power on the realised
+    # genotypes (seed sim_genotypes) after adjustment for the 10 PCs, with the
+    # betas above, alpha 5e-8, and the shift averaged over prediction_shift_draws
+    # draws (seed sim_prediction). Computed BEFORE any sim-v2 phenotype was
+    # drawn. They decide which loci are REQUIRED and are what the power
+    # calibration criterion is judged against.
+    conditional_power_pc_adjusted:
+      BCL11A: 0.9996
+      HBS1L-MYB: 0.8090 # includes +0.062 leakage from a chance 0.081 genotype correlation with BCL11A
+      HBB cluster: 0.4621
 
 # --- real-genotype phenotype simulation (scripts/04_assoc.sh) ------------------
 # Provisional: confirmed or revised in the Phase 2 step d pre-registration
@@ -140,14 +155,16 @@ acceptance:
     unadjusted_lambda_gc: {greater_than: 1.2} # structure is present
     adjusted_lambda_gc: {at_least: 0.97, at_most: 1.05}
     adjusted_type1_error: {alpha: 0.05, at_least: 0.04, at_most: 0.06}
+    # Proposed by the user in issue #10; the final number is approved in the
+    # Phase 2 step d pre-registration PR. Per planted locus:
+    # |empirical power over power_reps redraws - conditional predicted power| <= max_abs_diff
+    power_calibration: {max_abs_diff: 0.05, status: proposed}
   locus_recovery:
     # A locus is REQUIRED to be recovered only if its pre-computed analytic
-    # power is >= 0.8. Recovered means: the planted variant reaches
-    # p < association.genome_wide_alpha in the PC-adjusted analysis.
+    # power is >= 0.8 (sim-v2: the conditional power predicted from the
+    # genotypes before any phenotype). Recovered means: the planted variant
+    # reaches p < association.genome_wide_alpha in the PC-adjusted analysis.
     required_if_predicted_power_at_least: 0.8
     not_required_label: "underpowered, not required"
   real: null # written in Phase 2 step d, merged by the user, tagged prereg-v1
 
-# Reported but not gating (not specified by the brief):
-secondary_outcomes:
-  - "empirical power of each planted variant over simulated_experiment.power_reps phenotype redraws, with a binomial 95% interval, against its predicted power"

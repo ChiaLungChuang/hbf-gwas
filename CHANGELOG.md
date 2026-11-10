@@ -53,3 +53,11 @@ reasons are in [docs/decisions.md](docs/decisions.md).
 - Item 9 README (claim and non-claim first; status table with separate
   simulated-genotype and real-genotype columns, the real column "not yet
   run") and `docs/running-real-data.md` (Phase 2 walkthrough).
+
+### Changed after the Phase 1 review
+- A (issue #10): `hbfgwas.predict.conditional_power` (power conditional on
+  the realised genotypes and covariates, t critical value, leakage from other
+  planted loci); experiment sim-v2 with 2000 redraws at the sentinels, a
+  proposed per-locus power-calibration criterion (0.05) and per-allele
+  effects planted directly; post hoc diagnostic of the Phase 1 gap in
+  `runs/2026-11-10-power-diagnostic/`.

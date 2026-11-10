@@ -75,7 +75,27 @@ def test_declared_predictions_match_the_code():
         r2 = power.r2_from_beta(planted["beta_sd"], planted["ancestral_freq"])
         assert planted["r2"] == pytest.approx(r2, abs=5e-6)
         p = power.power(n=n, alpha=alpha, r2=r2, covariate_r2=exp["shift_var_fraction"])
-        assert pred["power_pc_adjusted"][planted["locus"]] == pytest.approx(p, abs=5e-4)
+        assert pred["unconditional_power_pc_adjusted"][planted["locus"]] == pytest.approx(
+            p, abs=5e-4
+        )
+
+
+def test_declared_conditional_predictions_match_the_code():
+    from hbfgwas import experiment
+
+    declared = CFG["simulated_experiment"]["predicted"]["conditional_power_pc_adjusted"]
+    cond = experiment.conditional_predictions(CFG)["pc_adjusted"]
+    assert set(declared) == set(cond)
+    for locus, value in declared.items():
+        assert value == pytest.approx(cond[locus]["power"], abs=5e-4), locus
+
+
+def test_power_calibration_is_the_users_proposed_number():
+    # issue #10: proposed by the user; final value approved in the Phase 2 step d PR
+    assert CFG["acceptance"]["simulated"]["power_calibration"] == {
+        "max_abs_diff": 0.05,
+        "status": "proposed",
+    }
 
 
 def test_planted_loci_match_the_locus_table():
