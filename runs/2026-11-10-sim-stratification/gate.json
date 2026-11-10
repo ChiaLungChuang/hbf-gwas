@@ -1,0 +1,47 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "name": "unadjusted lambda_GC",
+      "status": "PASS",
+      "observed": 1.3805589398766014,
+      "criterion": "> 1.2",
+      "detail": ""
+    },
+    {
+      "name": "PC-adjusted lambda_GC",
+      "status": "PASS",
+      "observed": 0.9994685214930457,
+      "criterion": ">= 0.97 and <= 1.05",
+      "detail": ""
+    },
+    {
+      "name": "PC-adjusted type I error",
+      "status": "PASS",
+      "observed": 0.05069,
+      "criterion": "at alpha 0.05: >= 0.04 and <= 0.06",
+      "detail": ""
+    },
+    {
+      "name": "locus BCL11A recovery",
+      "status": "PASS",
+      "observed": "p = 5.69e-21",
+      "criterion": "p < 5e-08 if predicted power >= 0.8",
+      "detail": "REQUIRED (predicted power 1.00); recovered"
+    },
+    {
+      "name": "locus HBS1L-MYB recovery",
+      "status": "NOT REQUIRED",
+      "observed": "p = 0.000155",
+      "criterion": "p < 5e-08 if predicted power >= 0.8",
+      "detail": "underpowered, not required (predicted power 0.22); not recovered"
+    },
+    {
+      "name": "locus HBB cluster recovery",
+      "status": "NOT REQUIRED",
+      "observed": "p = 1.02e-06",
+      "criterion": "p < 5e-08 if predicted power >= 0.8",
+      "detail": "underpowered, not required (predicted power 0.53); not recovered"
+    }
+  ]
+}

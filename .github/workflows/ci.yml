@@ -50,3 +50,35 @@ jobs:
         run: python -m pip install -e ".[dev]"
       - name: pytest
         run: python -m pytest -v
+
+  gate:
+    # Re-runs the pre-registered simulated experiment and applies the
+    # acceptance gate: a statistical regression breaks the build.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install package
+        run: python -m pip install -e .
+      - name: Run the pre-registered stratification experiment
+        run: python scripts/run_stratification.py --out-dir "$RUNNER_TEMP/sim" --figures-dir ""
+      - name: Acceptance gate
+        run: python -m hbfgwas.gate --results "$RUNNER_TEMP/sim/results.json"
+      - name: Reproduces the committed summary
+        run: |
+          python - <<'PY'
+          import json, os, sys
+          from hbfgwas import experiment
+          ref = json.load(open("docs/figures/sim_stratification_summary.json"))
+          new = json.load(open(os.path.join(os.environ["RUNNER_TEMP"], "sim", "sim_stratification_summary.json")))
+          diffs = experiment.compare_summaries(ref, new)
+          print("\n".join(diffs) or "summary reproduces docs/figures/sim_stratification_summary.json")
+          sys.exit(1 if diffs else 0)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sim-stratification
+          path: ${{ runner.temp }}/sim
