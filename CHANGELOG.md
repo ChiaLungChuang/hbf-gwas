@@ -14,3 +14,9 @@ reasons are in [docs/decisions.md](docs/decisions.md).
 - Item 3 `hbfgwas.power`: analytic power of the 1-df additive test via the
   noncentral chi-square (ncp = n R2/(1-R2), optional covariate R2), R2 from
   beta + MAF, and inverses `required_r2` / `required_n`.
+- Item 4 `hbfgwas.simulate`: Balding-Nichols genotypes for several
+  subpopulations with configurable Fst, an Fst moment estimator, the analytic
+  expected null chi-square under stratification, and a three-component
+  phenotype (planted effects, subpopulation shift, noise) that accepts real
+  genotype matrices and many repetitions at once. Calibration tests fail if
+  the simulation stops producing structure.
