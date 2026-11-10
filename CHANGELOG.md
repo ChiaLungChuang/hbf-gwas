@@ -37,3 +37,9 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   significance, concordance tolerances, seeds, planted effects, simulated
   experiment design with analytic predictions, and the brief's acceptance
   criteria. `tests/test_config.py` pins every value the brief specifies.
+- Item 7 `hbfgwas.experiment` and `scripts/run_stratification.py`: the
+  pre-registered stratification experiment on simulated genotypes (lambda_GC
+  and type I error without and with 10 PCs, planted-locus recovery, empirical
+  power over 1000 phenotype redraws), two-panel QQ figure and summary JSON in
+  `docs/figures/`, full results under `runs/`. CI re-runs it, applies the
+  gate, and checks it reproduces the committed summary.
