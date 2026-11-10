@@ -43,3 +43,10 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   power over 1000 phenotype redraws), two-panel QQ figure and summary JSON in
   `docs/figures/`, full results under `runs/`. CI re-runs it, applies the
   gate, and checks it reproduces the committed summary.
+- Item 8 real-data scripts `scripts/00_download_1kg.sh` to `05_report.py`,
+  `scripts/_common.sh`, `hbfgwas.pipeline` (sentinel lookup by rsID or
+  GRCh37 position, phenotype simulation on exported real genotypes, report
+  with Python-vs-plink2 concordance), `resources/long_range_ld_grch37.tsv`
+  (all entries unverified), and `tests/synthetic_1kg.py`, a synthetic
+  plink2 fileset on which CI runs 00 -> 05 end to end with a pinned official
+  plink2 build. Not run on real data.
