@@ -151,6 +151,7 @@ def e2e(tmp_path_factory):
         REL_URL=(s / "deg2_phase3.king.cutoff.out.id").as_uri(),
         MIN_FREE_GB=0,
         MIN_BYTES_LARGE=100,
+        MIN_BYTES_SMALL=10,
         HBFGWAS_LOCI_TSV=loci,
         HBFGWAS_SKIP_PREREG_CHECK=1,
     )

@@ -8,7 +8,7 @@
 #   PGEN_URL PVAR_URL PSAM_URL REL_URL   download URLs (defaults below)
 #   MIN_FREE_GB      required free disk in DATA_DIR       (default 20)
 #   MIN_BYTES_LARGE  minimum size of the .pgen.zst/.pvar.zst (default 1048576 = 1 MB)
-#   MIN_BYTES_SMALL  minimum size of the .psam and the related-sample list (default 100)
+#   MIN_BYTES_SMALL  minimum size of the .psam and the related-sample list (default 50)
 #
 # The brief asks for a 1 MB minimum on every file; the .psam (2504 samples) and
 # the related-sample list (14 samples) are far smaller than 1 MB by nature, so
@@ -30,7 +30,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 : "${REL_URL:=https://www.dropbox.com/s/zj8d14vv9mp6x3c/deg2_phase3.king.cutoff.out.id?dl=1}"
 : "${MIN_FREE_GB:=20}"
 : "${MIN_BYTES_LARGE:=1048576}"
-: "${MIN_BYTES_SMALL:=100}"
+: "${MIN_BYTES_SMALL:=50}"
 
 need curl
 need "$PLINK2"
