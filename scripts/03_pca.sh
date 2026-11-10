@@ -44,6 +44,8 @@ printf 'ld_pruned\t%s\t%s\t--indep-pairwise %skb %s %s\n' \
 plink --pfile "$in" --extract "$p.1_prune.prune.in" --king-cutoff "$king" --out "$p.2_king"
 save_log "$p.2_king"
 cp "$p.2_king.king.cutoff.in.id" "$DATA_DIR/unrelated.id"
+# plink2 may not write the .out.id file when nobody is removed
+if [ ! -f "$p.2_king.king.cutoff.out.id" ]; then printf '#IID\n' >"$p.2_king.king.cutoff.out.id"; fi
 n_unrel=$(count_records "$DATA_DIR/unrelated.id")
 n_out=$(count_records "$p.2_king.king.cutoff.out.id")
 printf 'king_unrelated\t%s\t%s\t--king-cutoff %s removed %s samples\n' \

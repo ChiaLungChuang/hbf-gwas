@@ -112,7 +112,7 @@ def build(out_dir: Path, plink2: str = "plink2", zstd: str = "zstd", seed: int =
     for i in range(5):
         add(
             "X",
-            1_000_000 + i * 50_000,
+            10_000_000 + i * 50_000,  # outside PAR1 (chrX:60001-2699520)
             f"rsX{i + 1}",
             "A",
             "G",
