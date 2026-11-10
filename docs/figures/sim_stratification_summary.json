@@ -1,5 +1,6 @@
 {
   "experiment": "simulated",
+  "prereg_version": "sim-v2",
   "design": {
     "n": 650,
     "n_per_subpop": [
@@ -16,22 +17,25 @@
     "fst": 0.01,
     "shift_var_fraction": 0.2,
     "n_pcs": 10,
-    "power_reps": 1000,
+    "planted_effect_mode": "beta (per-allele beta_sd)",
+    "power_reps": 2000,
+    "prediction_shift_draws": 2000,
     "seeds": {
       "sim_genotypes": 20261101,
       "sim_phenotype": 20261102,
-      "sim_power_reps": 20261103
+      "sim_power_reps_v2": 20261104,
+      "sim_prediction": 20261105
     }
   },
   "unadjusted": {
-    "lambda_gc": 1.3805589398766014,
-    "type1_error": 0.09665,
+    "lambda_gc": 1.3824782929831796,
+    "type1_error": 0.0969,
     "type1_alpha": 0.05,
     "n_covariates": 0
   },
   "adjusted": {
-    "lambda_gc": 0.9994685214930457,
-    "type1_error": 0.05069,
+    "lambda_gc": 1.002986894903118,
+    "type1_error": 0.05091,
     "type1_alpha": 0.05,
     "n_covariates": 10
   },
@@ -39,37 +43,41 @@
   "loci": [
     {
       "locus": "BCL11A",
-      "predicted_power": 0.9972525570882103,
-      "p_adjusted": 5.689588675354638e-21,
-      "recovered": true,
-      "empirical_power": 0.998,
+      "predicted_power": 0.9995525929312282,
+      "empirical_power": 0.999,
       "empirical_power_ci95": [
-        0.9927941610885425,
-        0.9997576988831227
-      ]
+        0.9963923714301715,
+        0.9998788724094432
+      ],
+      "empirical_minus_predicted": -0.0005525929312282241,
+      "p_adjusted": 6.806856370123135e-22,
+      "recovered": true
     },
     {
       "locus": "HBS1L-MYB",
-      "predicted_power": 0.21812037861254463,
-      "p_adjusted": 0.00015525098939517295,
-      "recovered": false,
-      "empirical_power": 0.375,
+      "predicted_power": 0.8090189965734119,
+      "empirical_power": 0.806,
       "empirical_power_ci95": [
-        0.3448999221212981,
-        0.405838439381056
-      ]
+        0.7879764531699424,
+        0.8231217216433897
+      ],
+      "empirical_minus_predicted": -0.0030189965734118696,
+      "p_adjusted": 1.2442795197396252e-06,
+      "recovered": false
     },
     {
       "locus": "HBB cluster",
-      "predicted_power": 0.531045614284533,
-      "p_adjusted": 1.0210516850146564e-06,
-      "recovered": false,
-      "empirical_power": 0.419,
+      "predicted_power": 0.46206525319290315,
+      "empirical_power": 0.451,
       "empirical_power_ci95": [
-        0.38819662922677944,
-        0.45028163840026025
-      ]
+        0.42902783301758196,
+        0.47311602845944506
+      ],
+      "empirical_minus_predicted": -0.011065253192903135,
+      "p_adjusted": 6.809974506475362e-07,
+      "recovered": false
     }
   ],
-  "predicted_unadjusted_lambda_gc": 1.3687943262411348
+  "predicted_unadjusted_lambda_gc": 1.3687943262411348,
+  "predictions_match_declared": true
 }

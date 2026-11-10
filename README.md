@@ -20,8 +20,9 @@ column changes only when the pipeline has actually been run on 1000 Genomes.
 
 | Component | Run on simulated genotypes | Run on real 1000 Genomes genotypes |
 |---|---|---|
-| Stratification experiment: lambda_GC and type I error, unadjusted vs 10 PCs | yes, gate passed: lambda_GC 1.381 → 0.9995, type I error 0.0966 → 0.0507 ([run](runs/2026-11-10-sim-stratification/README.md)) | not yet run |
-| Locus recovery vs pre-computed power | yes: BCL11A (power 0.997, required) recovered at p = 5.7e-21; HBB cluster (0.531) and HBS1L-MYB (0.218) underpowered, not required, not recovered | not yet run |
+| Stratification experiment: lambda_GC and type I error, unadjusted vs 10 PCs | yes (sim-v2): lambda_GC 1.383 → 1.003, type I error 0.0969 → 0.0509, all pass ([run](runs/2026-11-10-sim-v2/README.md)); sim-v1 also passed ([run](runs/2026-11-10-sim-stratification/README.md)) | not yet run |
+| Locus recovery vs pre-computed power | **sim-v2 gate FAILED**: BCL11A (power 0.9996, required) recovered at p = 6.8e-22; **HBS1L-MYB (power 0.809, required) not recovered, p = 1.2e-6**; HBB cluster (0.462) not required, not recovered | not yet run |
+| Predicted vs empirical power (2000 redraws, conditional on genotypes) | sim-v2: within 0.011 at all three loci, inside the proposed 0.05 | not yet run |
 | `00_download_1kg.sh` download + manifest | synthetic fileset, in CI | not yet run |
 | `01_subset_afr.sh` AFR subset, related samples, biallelic SNPs, duplicates | synthetic fileset, in CI | not yet run |
 | `02_qc.sh` per-filter QC table, sentinel report | synthetic fileset, in CI | not yet run |
@@ -30,20 +31,18 @@ column changes only when the pipeline has actually been run on 1000 Genomes.
 | `05_report.py` report and Python-vs-plink2 concordance | synthetic fileset, in CI | not yet run |
 | Locus table values (`src/hbfgwas/loci.py`) | all `verified: false`; awaiting user sign-off (#3) | n/a |
 
-![QQ plots of null variants on simulated genotypes, without and with 10 PCs](docs/figures/sim_stratification_qq.png)
+![QQ plots of null variants on simulated genotypes, without and with 10 PCs (sim-v2)](docs/figures/sim_stratification_qq.png)
 
 *Simulated genotypes (n = 650, 100,000 null variants, 7 subpopulations,
 Fst 0.01) and simulated phenotype. Summary numbers:
 [docs/figures/sim_stratification_summary.json](docs/figures/sim_stratification_summary.json).*
 
-**One thing that did not agree.** Over 1000 phenotype redraws, empirical power
-matched the prediction for BCL11A (0.998 vs 0.997) but not for HBS1L-MYB
-(0.375 vs 0.218) or HBB cluster (0.419 vs 0.531). This is a secondary,
-non-gating outcome. The redraws hold one genotype realization fixed, so they
-measure power conditional on it, whereas the formula averages over genotype
-draws. A post hoc diagnostic accounts for most of the gap (details in the
-[run notes](runs/2026-11-10-sim-stratification/README.md)). Nothing was
-changed after the run; how to redesign this outcome is an open decision (#10).
+**Open: sim-v2 failed a criterion.** After the Phase 1 review the power
+check was redesigned (issue #10) and now agrees with prediction at every
+locus. But planting the per-allele effects directly (D-022) made HBS1L-MYB a
+REQUIRED locus at predicted power 0.809, and the single pre-registered scan
+missed it (p = 1.2e-6 > 5e-8). Nothing was changed after the run; see the
+[run notes](runs/2026-11-10-sim-v2/README.md).
 
 ## How it works
 

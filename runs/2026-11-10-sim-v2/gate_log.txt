@@ -1,0 +1,13 @@
+criterion                            status        observed        rule                                                                           detail                                                          
+unadjusted lambda_GC                 PASS          1.3825          > 1.2                                                                                                                                          
+PC-adjusted lambda_GC                PASS          1.0030          >= 0.97 and <= 1.05                                                                                                                            
+PC-adjusted type I error             PASS          0.0509          at alpha 0.05: >= 0.04 and <= 0.06                                                                                                             
+locus BCL11A recovery                PASS          p = 6.81e-22    p < 5e-08 if predicted power >= 0.8                                            REQUIRED (predicted power 1.00); recovered                      
+locus HBS1L-MYB recovery             FAIL          p = 1.24e-06    p < 5e-08 if predicted power >= 0.8                                            REQUIRED (predicted power 0.81); not recovered                  
+locus HBB cluster recovery           NOT REQUIRED  p = 6.81e-07    p < 5e-08 if predicted power >= 0.8                                            underpowered, not required (predicted power 0.46); not recovered
+locus BCL11A power calibration       PASS          0.999 vs 1.000  |empirical - predicted| <= 0.05 (proposed)                                     empirical 95% CI [0.996, 1.000]; difference -0.001              
+locus HBS1L-MYB power calibration    PASS          0.806 vs 0.809  |empirical - predicted| <= 0.05 (proposed)                                     empirical 95% CI [0.788, 0.823]; difference -0.003              
+locus HBB cluster power calibration  PASS          0.451 vs 0.462  |empirical - predicted| <= 0.05 (proposed)                                     empirical 95% CI [0.429, 0.473]; difference -0.011              
+declared predictions reproduced      PASS          True            predicted power recomputed by the run equals the value declared in the config                                                                  
+
+GATE FAILED
