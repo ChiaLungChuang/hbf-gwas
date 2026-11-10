@@ -1,0 +1,153 @@
+# =============================================================================
+# hbf-gwas pre-registration (analysis plan and acceptance criteria)
+# =============================================================================
+# Declared on 2026-11-10, BEFORE any experiment was run. The phenotype is
+# always simulated; 1000 Genomes has no HbF phenotype.
+#
+# Rules (docs/BRIEF.md):
+#   * acceptance criteria are never edited after a result has been seen;
+#   * if a run fails a criterion, nothing is changed: it is reported;
+#   * seeds are fixed here; simulations are not tuned to hit a number.
+# tests/test_config.py pins every value the brief specifies.
+# Phase 2 step d adds real-data criteria under acceptance.real, and that commit
+# is tagged prereg-v1 before any real association is run.
+# =============================================================================
+
+prereg:
+  version: sim-v1
+  declared: "2026-11-10"
+  status: simulated-genotype criteria declared; real-data criteria pending (Phase 2 step d)
+
+# --- QC (scripts/02_qc.sh), applied one filter at a time in this order -------
+qc:
+  geno: 0.02
+  mind: 0.02
+  maf: 0.01
+  hwe_p: 1.0e-6
+  hwe_mode: midp
+  # scripts/01_subset_afr.sh fails unless the AFR sample count after removing
+  # the 1000 Genomes related-sample list lies in this range
+  expected_afr_samples: {min: 640, max: 665}
+
+# --- PCA (scripts/03_pca.sh) ------------------------------------------------
+pca:
+  n_pcs: 10
+  method: exact # plink2 --pca 10, not --pca approx
+  long_range_ld_regions: resources/long_range_ld_grch37.tsv
+  maf_for_pca: 0.05 # PCA variants only; association uses the QC maf
+  ld_prune: {window_kb: 1000, step: 1, r2: 0.1} # plink2 --indep-pairwise 1000kb 1 0.1
+  king_cutoff: 0.0884 # plink2 --king-cutoff; second-degree relatives
+  het_report: true # plink2 --het, reported only, no filter
+
+# --- association --------------------------------------------------------------
+association:
+  model: additive linear regression (plink2 --glm), with and without the PCs
+  genome_wide_alpha: 5.0e-8
+  type1_alpha: 0.05
+  # Real data: variants within this distance of a planted sentinel are not
+  # treated as null when computing empirical type I error (they are in LD with it).
+  null_exclusion_window_bp: 1000000
+
+# --- Python reference vs plink2 --glm (hbfgwas.assoc.compare_to_plink2) -------
+concordance:
+  beta_rtol: 1.0e-3
+  beta_atol: 1.0e-8
+  log10p_rtol: 1.0e-3
+  log10p_atol: 1.0e-2
+  n_random_variants: 2000 # plus every planted sentinel
+
+seeds:
+  sim_genotypes: 20261101
+  sim_phenotype: 20261102
+  sim_power_reps: 20261103
+  real_phenotype: 20261201
+  real_concordance_sample: 20261202
+
+# --- planted effects --------------------------------------------------------
+# Per-allele effect of the HbF-increasing allele, in SD units of the simulated
+# phenotype (total variance 1). Taken from src/hbfgwas/loci.py, where every
+# value is still verified: false (issue #3).
+planted_effects:
+  - locus: BCL11A
+    effect_allele: T
+    beta_sd: 0.456435
+    derivation: "sqrt(PVE / (2 p (1 - p))) with PVE 0.076 and MAF 0.24 (Wonkam et al. 2025 global meta-analysis)"
+  - locus: HBS1L-MYB
+    effect_allele: C
+    beta_sd: 0.571
+    derivation: "reported in SD units per minor allele (Lettre et al. 2008 Table 1, CSSCD)"
+  - locus: HBB cluster
+    effect_allele: A
+    beta_sd: 0.407
+    derivation: "reported in SD units per minor allele (Lettre et al. 2008 Table 1, CSSCD)"
+
+# --- experiment 1: stratification on simulated genotypes (item 7) --------------
+simulated_experiment:
+  # Seven equal subpopulations of ~650 people, mirroring the expected size and
+  # population count of the 1000 Genomes AFR sample.
+  n_per_subpop: [93, 93, 93, 93, 93, 93, 92]
+  n_null_variants: 100000 # SD of lambda_GC under the null ~0.007 at this size
+  fst: 0.01 # assumed Balding-Nichols differentiation; not estimated from data
+  ancestral_freq_range: [0.05, 0.95] # null variants, Uniform
+  # Non-genetic subpopulation shift as a fraction of phenotypic variance. Chosen
+  # so the unadjusted analysis is clearly confounded (predicted lambda below);
+  # it is not an estimate of any real HbF difference between populations.
+  shift_var_fraction: 0.2
+  n_pcs: 10
+  power_reps: 1000 # phenotype redraws for empirical power (secondary outcome)
+  # Planted variants: ancestral frequency of the effect allele, and the variance
+  # explained r2 = 2 p (1 - p) beta_sd^2. simulate_phenotype(r2=...) sets each
+  # beta so the realized variance in the sample equals r2 exactly.
+  planted:
+    - locus: BCL11A
+      beta_sd: 0.456435
+      ancestral_freq: 0.237519
+      ancestral_freq_source: "1000 Genomes phase 3 AFR, T allele, via Ensembl GRCh37"
+      r2: 0.075460
+    - locus: HBS1L-MYB
+      beta_sd: 0.571
+      ancestral_freq: 0.041604
+      ancestral_freq_source: "1000 Genomes phase 3 AFR, C allele, via Ensembl GRCh37"
+      r2: 0.026000
+    - locus: HBB cluster
+      beta_sd: 0.407
+      ancestral_freq: 0.1238
+      ancestral_freq_source: "gnomAD exomes AFR, A allele, via Ensembl GRCh37 (no 1000 Genomes phase 3 value exists)"
+      r2: 0.035937
+  # Analytic predictions computed from the parameters above before any run
+  # (hbfgwas.simulate.expected_null_chi2, hbfgwas.power.power with n = 650,
+  # alpha = 5e-8, covariate_r2 = shift_var_fraction, i.e. assuming the PCs
+  # absorb the shift). Informational except power_pc_adjusted, which decides
+  # which loci are REQUIRED below.
+  predicted:
+    unadjusted_lambda_gc: 1.3688
+    power_pc_adjusted:
+      BCL11A: 0.9973
+      HBS1L-MYB: 0.2181
+      HBB cluster: 0.5310
+
+# --- real-genotype phenotype simulation (scripts/04_assoc.sh) ------------------
+# Provisional: confirmed or revised in the Phase 2 step d pre-registration
+# (prereg-v1), after the real n and real sentinel frequencies are known.
+real_data_simulation:
+  population_column: Population # the seven 1000 Genomes AFR populations
+  shift_var_fraction: 0.2
+  effects: planted_effects # beta_sd per HbF-increasing allele, as above
+
+# --- acceptance criteria --------------------------------------------------------
+acceptance:
+  simulated:
+    unadjusted_lambda_gc: {greater_than: 1.2} # structure is present
+    adjusted_lambda_gc: {at_least: 0.97, at_most: 1.05}
+    adjusted_type1_error: {alpha: 0.05, at_least: 0.04, at_most: 0.06}
+  locus_recovery:
+    # A locus is REQUIRED to be recovered only if its pre-computed analytic
+    # power is >= 0.8. Recovered means: the planted variant reaches
+    # p < association.genome_wide_alpha in the PC-adjusted analysis.
+    required_if_predicted_power_at_least: 0.8
+    not_required_label: "underpowered, not required"
+  real: null # written in Phase 2 step d, merged by the user, tagged prereg-v1
+
+# Reported but not gating (not specified by the brief):
+secondary_outcomes:
+  - "empirical power of each planted variant over simulated_experiment.power_reps phenotype redraws, with a binomial 95% interval, against its predicted power"

@@ -32,3 +32,8 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   error, empirical power, QQ plot with a pointwise band, a plink2 `--glm`
   reader, and `compare_to_plink2` (allele-flip aware, tolerance on BETA and
   -log10 P).
+- Item 6 `config/analysis.yaml` (pre-registration, declared before any
+  experiment ran) and `hbfgwas.gate` (`python -m hbfgwas.gate`): QC, PCA,
+  significance, concordance tolerances, seeds, planted effects, simulated
+  experiment design with analytic predictions, and the brief's acceptance
+  criteria. `tests/test_config.py` pins every value the brief specifies.
