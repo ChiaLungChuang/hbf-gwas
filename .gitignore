@@ -1,0 +1,33 @@
+# Genotype data and pipeline outputs never go into git.
+data/
+results/
+*.pgen
+*.pgen.zst
+*.pvar
+*.pvar.zst
+*.psam
+*.bed
+*.bim
+*.fam
+*.vcf
+*.vcf.gz
+*.bcf
+*.raw
+
+# Committed run documentation lives in runs/<date>/ and docs/figures/;
+# those directories are NOT ignored.
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
