@@ -159,8 +159,14 @@ def build(out_dir: Path, plink2: str = "plink2", zstd: str = "zstd", seed: int =
             )
 
     prefix = work / "all_phase3"
+    # Sample file first: plink2 needs sex information to import chrX.
+    psam_in = work / "synth.psam"
+    with open(psam_in, "w") as fh:
+        fh.write("#IID\tPAT\tMAT\tSEX\tSuperPop\tPopulation\n")
+        for iid, pop, sup, sex in samples:
+            fh.write(f"{iid}\t0\t0\t{sex}\t{sup}\t{pop}\n")
     r = subprocess.run(
-        [plink2, "--vcf", str(vcf), "--make-pgen", "--out", str(prefix)],
+        [plink2, "--vcf", str(vcf), "--psam", str(psam_in), "--make-pgen", "--out", str(prefix)],
         capture_output=True,
         text=True,
     )
@@ -170,10 +176,6 @@ def build(out_dir: Path, plink2: str = "plink2", zstd: str = "zstd", seed: int =
             f"plink2 --vcf failed ({r.returncode})\nSTDOUT:\n{r.stdout}\nSTDERR:\n{r.stderr}\n"
             + (f"LOG:\n{log.read_text()}" if log.exists() else "")
         )
-    with open(f"{prefix}.psam", "w") as fh:
-        fh.write("#IID\tPAT\tMAT\tSEX\tSuperPop\tPopulation\n")
-        for iid, pop, sup, sex in samples:
-            fh.write(f"{iid}\t0\t0\t{sex}\t{sup}\t{pop}\n")
 
     serve = out_dir / "serve"
     serve.mkdir(exist_ok=True)
@@ -182,7 +184,7 @@ def build(out_dir: Path, plink2: str = "plink2", zstd: str = "zstd", seed: int =
             [zstd, "-q", "-f", f"{prefix}.{ext}", "-o", str(serve / f"all_phase3.{ext}.zst")],
             check=True,
         )
-    shutil.copy(f"{prefix}.psam", serve / "all_phase3.psam")
+    shutil.copy(psam_in, serve / "all_phase3.psam")
     (serve / "deg2_phase3.king.cutoff.out.id").write_text("#IID\n" + "".join(f"{s}\n" for s in REL))
     return {
         "serve": serve,
