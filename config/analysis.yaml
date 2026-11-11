@@ -16,7 +16,7 @@
 prereg:
   version: sim-v3
   declared: "2026-11-11"
-  status: sim-v3 criteria amended after the FAILED sim-v2 result; sim-v3 seed pre-registered (seeds.sim_v3); predictions and run pending; real-data criteria pending (Phase 2 step d, which uses the sim-v3 rule)
+  status: sim-v3 criteria amended after the FAILED sim-v2 result; sim-v3 seed pre-registered (seeds.sim_v3, commit c2ca787); predictions declared; run pending; real-data criteria pending (Phase 2 step d, which uses the sim-v3 rule)
   history:
     - "sim-v1: declared and run 2026-11-10 (config commit f63e8bd; runs/2026-11-10-sim-stratification): gate PASSED"
     - "sim-v2: power check redesigned after seeing the sim-v1 result (issue #10; D-020 to D-023); declared df3b117, run 2026-11-10 (runs/2026-11-10-sim-v2): gate FAILED, HBS1L-MYB REQUIRED at predicted power 0.809 and not recovered (p = 1.24e-6). Recorded as failed; not rerun."
@@ -144,7 +144,10 @@ simulated_experiment:
     # any sim-v3 phenotype is drawn. They decide which loci are REQUIRED and are
     # what the power calibration is judged against. (sim-v2 declared 0.9996 /
     # 0.8090 / 0.4621 for its own genotypes; see runs/2026-11-10-sim-v2.)
-    conditional_power_pc_adjusted: null
+    conditional_power_pc_adjusted:
+      BCL11A: 0.9958 # >= 0.99: REQUIRED in the single scan
+      HBS1L-MYB: 0.0311
+      HBB cluster: 0.2160
 
 # --- real-genotype phenotype simulation (scripts/04_assoc.sh) ------------------
 # Provisional: confirmed or revised in the Phase 2 step d pre-registration
