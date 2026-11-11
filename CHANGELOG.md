@@ -84,3 +84,5 @@ reasons are in [docs/decisions.md](docs/decisions.md).
 - D: HWE QC uses `--hwe 1e-6 midp keep-fewhet` (only excess heterozygosity
   filtered); the README explains why. The synthetic fileset gains
   heterozygote-deficit records that must be kept.
+- E: `03_pca.sh` states explicitly when the KING step removes no samples
+  (and lists any it does remove), like the missingness filters in 02.

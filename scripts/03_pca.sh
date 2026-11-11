@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # 03: ancestry PCs. Exclude long-range LD regions (resources/, GRCh37), keep
 # MAF >= pca.maf_for_pca, LD-prune, remove second-degree relatives with
-# KING-robust (cutoff pca.king_cutoff), exact PCA (plink2 --pca N, not approx),
-# and a --het report (no filter). Settings from config/analysis.yaml (pca).
+# KING-robust (cutoff pca.king_cutoff; when it removes nobody the script says so,
+# as 02 does for the missingness filters), exact PCA (plink2 --pca N, not
+# approx), and a --het report (no filter). Settings from config/analysis.yaml (pca).
 #
 # In:  DATA_DIR/afr_qc.{pgen,pvar,psam}
 # Out: DATA_DIR/pca.eigenvec, DATA_DIR/unrelated.id (samples kept by KING);
@@ -51,6 +52,15 @@ n_out=$(count_records "$p.2_king.king.cutoff.out.id")
 printf 'king_unrelated\t%s\t%s\t--king-cutoff %s removed %s samples\n' \
 	"$n_unrel" "$(count_records "$p.1_prune.prune.in")" "$king" "$n_out" >>"$counts"
 cp "$p.2_king.king.cutoff.out.id" "$RUN_DIR/king_removed.id"
+if [ "$n_out" -eq 0 ]; then
+	log "NOTE: --king-cutoff $king removed 0 samples. The 1000 Genomes related-sample list"
+	log "      (second degree, made with --king-cutoff 0.0884 on all 2504 samples) was"
+	log "      already removed in 01_subset_afr.sh, so this step checks that no further"
+	log "      relatives remain in the AFR subset; it found none."
+else
+	log "--king-cutoff $king removed $n_out samples beyond the 1000 Genomes related-sample"
+	log "list; their IDs are in $RUN_DIR/king_removed.id."
+fi
 
 plink --pfile "$in" --keep "$DATA_DIR/unrelated.id" --extract "$p.1_prune.prune.in" \
 	--pca "$n_pcs" --out "$p.3"
