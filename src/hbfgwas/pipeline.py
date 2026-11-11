@@ -518,20 +518,37 @@ def _figures(config, data_dir, run_dir, glm, results) -> None:
     fig.savefig(run_dir / "qq_real.png", dpi=150)
     plt.close(fig)
 
-    eig = read_eigenvec(data_dir / "pca.eigenvec")
-    psam = read_psam(data_dir / "afr_qc.psam")
+
+def pc_plot(config: dict, eigenvec_path, psam_path, out_path) -> dict:
+    """PC1 vs PC2 coloured by population (the .psam Population column, not SuperPop).
+
+    Used by scripts/03b_pc_plot.py at Phase 2 step c, right after the PCA.
+    Returns the sample count per population.
+    """
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    eig = read_eigenvec(eigenvec_path)
+    psam = read_psam(psam_path)
     pop_col = config["real_data_simulation"]["population_column"]
     df = eig.merge(psam[["IID", pop_col]], on="IID", how="left")
+    if df[pop_col].isna().any():
+        raise ValueError(f"some PCA samples have no {pop_col} label in the .psam")
+    counts = {}
     fig, ax = plt.subplots(figsize=(6.4, 5.2))
     for i, (pop, grp) in enumerate(sorted(df.groupby(pop_col), key=lambda t: t[0])):
         ax.scatter(grp["PC1"], grp["PC2"], s=10, label=f"{pop} (n={len(grp)})", color=f"C{i}")
+        counts[str(pop)] = int(len(grp))
     ax.set_xlabel("PC1")
     ax.set_ylabel("PC2")
     ax.legend(fontsize=8, frameon=False)
-    ax.set_title("1000 Genomes AFR: PC1 vs PC2 by population")
+    ax.set_title(f"1000 Genomes AFR: PC1 vs PC2 by {pop_col}")
     fig.tight_layout()
-    fig.savefig(run_dir / "pc1_pc2_by_population.png", dpi=150)
+    fig.savefig(out_path, dpi=150)
     plt.close(fig)
+    return counts
 
 
 # --- CLI --------------------------------------------------------------------------

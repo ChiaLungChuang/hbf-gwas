@@ -26,6 +26,7 @@ column changes only when the pipeline has actually been run on 1000 Genomes.
 | `01_subset_afr.sh` AFR subset, related samples, biallelic SNPs, duplicates | synthetic fileset, in CI | not yet run |
 | `02_qc.sh` per-filter QC table, sentinel report | synthetic fileset, in CI | not yet run |
 | `03_pca.sh` long-range LD exclusion, pruning, KING, exact PCA, het | synthetic fileset, in CI | not yet run |
+| `03b_pc_plot.py` PC1 vs PC2 by the seven AFR populations | synthetic fileset, in CI | not yet run |
 | `04_assoc.sh` simulated phenotype on the genotypes, plink2 `--glm` ± PCs | synthetic fileset, in CI | not yet run |
 | `05_report.py` report and Python-vs-plink2 concordance | synthetic fileset, in CI | not yet run |
 | Locus table values (`src/hbfgwas/loci.py`) | all `verified: false`; awaiting user sign-off (#3) | n/a |
@@ -128,7 +129,7 @@ no ancestries other than 1000 Genomes AFR.
 |---|---|
 | `src/hbfgwas/` | `loci`, `power`, `simulate`, `assoc`, `gate`, `experiment`, `pipeline`, `config` |
 | `config/analysis.yaml` | pre-registration |
-| `scripts/` | `00`-`05` real-data pipeline, `run_stratification.py`, `check_language.py` |
+| `scripts/` | `00`-`05` real-data pipeline (with `03b_pc_plot.py`), `run_stratification.py`, `check_language.py` |
 | `resources/` | long-range LD regions (GRCh37), with source and verification status |
 | `runs/<date>/` | committed documentation of each run |
 | `docs/` | brief, decisions, walkthrough, figures |
