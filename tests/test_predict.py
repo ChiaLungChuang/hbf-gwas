@@ -108,3 +108,104 @@ def test_shift_vectors_have_the_simulation_law(scenario):
     np.testing.assert_allclose(sh.var(axis=0), s["h"], rtol=1e-10)
     for k in np.unique(s["pop"]):
         assert np.ptp(sh[s["pop"] == k], axis=0).max() < 1e-12
+
+
+# --- predicted lambda_GC (review item H) ------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def lam_scenario():
+    rng = np.random.default_rng(808)
+    sizes = [150, 150, 150]
+    g = sim.simulate_genotypes(sizes, fst=0.05, rng=rng, n_variants=4000)
+    pcs = assoc.pca(g.genotypes[:, :2000], n_pcs=5).pcs
+    return dict(g=g.genotypes[:, 2000:].astype(float), pop=g.pop, pcs=pcs, h=0.15)
+
+
+def test_mixture_median_of_central_chi2_is_the_chi2_median():
+    m = predict.mixture_median_chi2(np.zeros(100))
+    assert m == pytest.approx(stats.chi2.ppf(0.5, 1), rel=1e-6)
+
+
+def test_mixture_median_matches_simulation():
+    rng = np.random.default_rng(9)
+    d2 = rng.uniform(0, 4, 500)
+    draws = (rng.standard_normal((400, 500)) + np.sqrt(d2)) ** 2
+    assert predict.mixture_median_chi2(d2) == pytest.approx(np.median(draws), rel=0.01)
+
+
+@pytest.mark.parametrize("adjusted", [False, True])
+def test_predicted_lambda_matches_observed_lambda_over_phenotype_draws(lam_scenario, adjusted):
+    """Prediction (genotypes only) vs lambda_GC observed on 40 simulated phenotypes."""
+    s = lam_scenario
+    cov = s["pcs"] if adjusted else None
+    pred = predict.predicted_lambda(
+        s["g"], s["pop"], s["h"], covariates=cov, n_shift_draws=400, rng=np.random.default_rng(12)
+    )
+    ph = sim.simulate_phenotype(
+        s["g"][:, :1],
+        s["pop"],
+        rng=np.random.default_rng(13),
+        r2=[0.0],
+        shift_var_fraction=s["h"],
+        n_reps=40,
+    )
+    res = assoc.linear_assoc(s["g"], ph.y, cov)
+    observed = np.array([assoc.lambda_gc(res.p[:, r]) for r in range(40)])
+    se = observed.std(ddof=1) / np.sqrt(40)
+    assert abs(observed.mean() - pred["mean"]) < 3 * se + 0.01, (observed.mean(), pred)
+    # the interval plus the sampling error of a median over 2000 variants
+    samp = predict.lambda_sampling_sd(pred["median"], pred["n_variants"])
+    lo, hi = pred["q05"] - 1.645 * samp, pred["q95"] + 1.645 * samp
+    inside = np.mean((observed >= lo) & (observed <= hi))
+    assert inside >= 0.75, (inside, lo, hi, observed.min(), observed.max())
+
+
+def test_predicted_lambda_weak_structure_matches_observed():
+    """Weak structure (the experiment's own design: 7 x 93, Fst 0.01, h 0.2).
+
+    Sensitive to double counting the within-subpopulation sampling part of
+    the genotype means, which shifts lambda by about h.
+    """
+    rng = np.random.default_rng(909)
+    g = sim.simulate_genotypes([93] * 7, fst=0.01, rng=rng, n_variants=6000)
+    null = g.genotypes[:, :4000].astype(float)
+    pred = predict.predicted_lambda(
+        null, g.pop, 0.2, n_shift_draws=300, rng=np.random.default_rng(910)
+    )
+    ph = sim.simulate_phenotype(
+        null[:, :1],
+        g.pop,
+        rng=np.random.default_rng(911),
+        r2=[0.0],
+        shift_var_fraction=0.2,
+        n_reps=40,
+    )
+    res = assoc.linear_assoc(null, ph.y)
+    observed = np.array([assoc.lambda_gc(res.p[:, r]) for r in range(40)])
+    se = observed.std(ddof=1) / np.sqrt(40)
+    assert abs(observed.mean() - pred["mean"]) < 3 * se + 0.01, (observed.mean(), pred["mean"], se)
+
+
+def test_lambda_sampling_sd():
+    # 100,000 independent null variants: SD ~ 0.0074 (the sim-v1 design note)
+    assert predict.lambda_sampling_sd(1.0, 100_000) == pytest.approx(0.00738, abs=2e-4)
+
+
+def test_predicted_lambda_summary(lam_scenario):
+    s = lam_scenario
+    out = predict.predicted_lambda(
+        s["g"], s["pop"], s["h"], n_shift_draws=50, rng=np.random.default_rng(11)
+    )
+    adj = predict.predicted_lambda(
+        s["g"],
+        s["pop"],
+        s["h"],
+        covariates=s["pcs"],
+        n_shift_draws=50,
+        rng=np.random.default_rng(11),
+    )
+    assert out["q05"] <= out["median"] <= out["q95"]
+    assert out["median"] > 1.5
+    assert adj["median"] == pytest.approx(1.0, abs=0.06)
+    assert out["n_variants"] == 2000 and out["n_shift_draws"] == 50

@@ -142,3 +142,13 @@ def test_sentinel_rule_has_no_proxies():
     from hbfgwas.pipeline import NOT_TESTABLE
 
     assert CFG["sentinels"] == {"not_testable_label": NOT_TESTABLE, "proxies": "none"}
+
+
+def test_prediction_settings():
+    # review item H: Phase 2 step d predictions, computed before any phenotype
+    assert CFG["prediction"] == {
+        "n_null_variants": 20000,
+        "power_shift_draws": 2000,
+        "lambda_shift_draws": 200,
+    }
+    assert isinstance(CFG["seeds"]["real_prediction"], int)

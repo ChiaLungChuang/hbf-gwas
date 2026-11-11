@@ -148,3 +148,38 @@ All six empirical values are at or slightly below prediction (-0.001 to
 
 The Phase 2 step d real-data pre-registration uses the same rule, with
 predictions computed from the real genotypes and PCs.
+
+## 6. Predicted lambda_GC from genotypes (review item H)
+
+`hbfgwas.predict.predicted_lambda` predicts the unadjusted (and PC-adjusted)
+lambda_GC from the genotypes alone, before any phenotype is drawn. For each
+draw of the random parts that act on all null variants at once (the
+subpopulation shift, and the subpopulation means of the noise), each null
+variant's t statistic is N(delta_j, tau^2). Here delta_j = sqrt(n) cov(g_r,
+s_r) / (sd(g_r) sd(y_r)), computed from the **realised** genotypes, and
+tau^2 is the non-shift share of the residual phenotype variance. lambda is
+the median of the implied chi-square mixture over the null variants,
+divided by 0.4549. The summary is the median and the 5th-95th percentile
+over draws. Estimating lambda as a median over M independent variants adds
+an SD of about 2.333 lambda / sqrt(M).
+
+Two corrections were needed while building it, both found by tests and
+checks:
+
+* The noise's own subpopulation means act like a second, small shift on all
+  variants at once, so they are drawn as well.
+* The within-subpopulation sampling part of the genotype means is already in
+  delta_j, so the noise term has variance 1 - h, not 1. With this,
+  E[chi2] ~ (1 - h) + 2nFh/K + h(1 - 1/K). For the simulated design that is
+  1.342, which shows that `simulate.expected_null_chi2` (1.369, declared in
+  sim-v1) over-counts by about h/K. That declared value stays as it was; it
+  was informational and never a criterion.
+
+Check on the sim-v3 genotypes (20,000 random null variants, 200 draws; no
+phenotype): predicted unadjusted lambda_GC 1.372 [1.292, 1.471], with PCs
+1.000 [1.000, 1.000]. sim-v3 observed 1.342 and 0.998.
+
+On real data, `scripts/03c_prereg_predictions.sh` computes the same
+quantities from the real genotypes and PCs, together with the conditional
+power of each testable sentinel, for the Phase 2 step d pre-registration.
+

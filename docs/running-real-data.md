@@ -86,12 +86,24 @@ loci with conditional predicted power >= 0.99, and every other locus's
 single-scan result reported next to its predicted power. The predictions are
 computed from the real genotypes and PCs before any phenotype is drawn.
 
-With the real n and the real sentinel frequencies from `sentinels.tsv`,
-compute analytic power per locus (`hbfgwas.power.power(n, 5e-8, beta=...,
-maf=..., covariate_r2=...)`). Write the real-data acceptance criteria into
-`config/analysis.yaml` under `acceptance.real` (including a
-`predicted_power` entry per locus, which `05_report.py` will use instead of
-computing power at report time). Open a PR; the user reviews and merges it.
+Before any phenotype exists, run
+
+```bash
+scripts/03c_prereg_predictions.sh   # $RUN_DIR/prereg_predictions.json
+```
+
+It writes, from the real genotypes and PCs:
+- the conditional power of each testable sentinel, and which loci the sim-v3
+  rule makes REQUIRED (predicted power >= 0.99);
+- the **predicted unadjusted lambda_GC** (and PC-adjusted), each as a median
+  with a 5th-95th percentile over draws of the population shift (review
+  item H);
+- the sentinels that are not testable in this callset.
+
+Write the real-data acceptance criteria into `config/analysis.yaml` under
+`acceptance.real`. Include a `predicted_power` entry per locus, which
+`05_report.py` then uses instead of computing power at report time, and the
+predicted lambda_GC. Open a PR; the user reviews and merges it.
 Then tag the merge commit and push the tag **before** step 4:
 
 ```bash

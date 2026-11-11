@@ -5,7 +5,10 @@ Commands
 config-get        print one value from config/analysis.yaml (dotted key)
 sentinels         find the sentinel variants in a .pvar (by rsID, else by GRCh37 position)
 sentinel-report   allele frequency and QC survival of each sentinel
-sample-ids        reproducible random subset of variant IDs (plus required IDs)
+sample-ids        reproducible random subset of variant IDs (plus required IDs; optionally
+                  away from the sentinels)
+predictions       Phase 2 step d: conditional power and predicted lambda_GC from the real
+                  genotypes and PCs, before any phenotype
 simulate-phenotype  simulate the HbF-like phenotype on genotypes exported with
                   plink2 --export A (the phenotype is always simulated)
 het-summary       summary of a plink2 --het report
@@ -231,11 +234,28 @@ def sentinel_report(
 # --- variant subset ------------------------------------------------------------
 
 
-def sample_ids(pvar_path, n: int, seed: int, include: set[str] | None = None) -> list[str]:
-    """``n`` variant IDs chosen uniformly without replacement (two passes), plus ``include``."""
-    total = sum(1 for _ in iter_pvar(pvar_path))
+def sample_ids(
+    pvar_path,
+    n: int,
+    seed: int,
+    include: set[str] | None = None,
+    exclude_windows: list[tuple[str, int]] | None = None,
+    window_bp: int = 0,
+) -> list[str]:
+    """``n`` variant IDs chosen uniformly without replacement (two passes), plus ``include``.
+
+    Variants within ``window_bp`` of any (chrom, pos) in ``exclude_windows`` are
+    never chosen (used to draw null variants away from the planted sentinels).
+    """
+    excl = [(_norm_chrom(c), int(p)) for c, p in (exclude_windows or [])]
+
+    def eligible(chrom, pos):
+        c = _norm_chrom(chrom)
+        return not any(c == ec and abs(pos - ep) <= window_bp for ec, ep in excl)
+
+    idx = [i for i, (c, p, _, _, _) in enumerate(iter_pvar(pvar_path)) if eligible(c, p)]
     rng = np.random.default_rng(seed)
-    pick = set(rng.choice(total, size=min(n, total), replace=False).tolist())
+    pick = set(np.asarray(idx)[rng.choice(len(idx), size=min(n, len(idx)), replace=False)].tolist())
     chosen = [vid for i, (_, _, vid, _, _) in enumerate(iter_pvar(pvar_path)) if i in pick]
     for vid in sorted(include or ()):
         if vid not in chosen:
@@ -246,16 +266,12 @@ def sample_ids(pvar_path, n: int, seed: int, include: set[str] | None = None) ->
 # --- phenotype on real genotypes ------------------------------------------------
 
 
-def simulate_phenotype_from_raw(
-    config: dict, raw: RawGenotypes, smap: pd.DataFrame, psam: pd.DataFrame
-) -> tuple[pd.DataFrame, dict]:
-    """Simulate the HbF-like phenotype on exported sentinel genotypes.
+def effect_allele_dosages(config: dict, raw: RawGenotypes, smap: pd.DataFrame):
+    """Counts of each found sentinel's HbF-increasing allele, its beta, and metadata.
 
-    Genotypes are converted to counts of each locus's HbF-increasing allele
-    (the table's effect allele) and given the per-allele effect ``beta_sd``
-    from ``planted_effects``; the shift is by ``real_data_simulation.population_column``.
+    Checks that the config and the locus table agree on the effect allele and
+    that it is one of the data's alleles (catches strand or allele mismatches).
     """
-    sim_cfg = config["real_data_simulation"]
     effects = {e["locus"]: e for e in config["planted_effects"]}
     found = smap[smap["id"].notna()].reset_index(drop=True)
     cols, betas, loci_meta = [], [], []
@@ -287,10 +303,24 @@ def simulate_phenotype_from_raw(
             }
         )
     if not cols:
-        raise ValueError("no sentinel genotypes to plant")
+        raise ValueError("no sentinel genotypes found")
     geno = np.column_stack(cols)
     if np.isnan(geno).any():
         raise ValueError("missing genotypes at a sentinel; phase 3 should be fully called")
+    return geno, np.array(betas), loci_meta
+
+
+def simulate_phenotype_from_raw(
+    config: dict, raw: RawGenotypes, smap: pd.DataFrame, psam: pd.DataFrame
+) -> tuple[pd.DataFrame, dict]:
+    """Simulate the HbF-like phenotype on exported sentinel genotypes.
+
+    Genotypes are converted to counts of each locus's HbF-increasing allele
+    (the table's effect allele) and given the per-allele effect ``beta_sd``
+    from ``planted_effects``; the shift is by ``real_data_simulation.population_column``.
+    """
+    sim_cfg = config["real_data_simulation"]
+    geno, betas, loci_meta = effect_allele_dosages(config, raw, smap)
 
     pop_col = sim_cfg["population_column"]
     pops = psam.set_index("IID").reindex(raw.iid)[pop_col]
@@ -304,6 +334,7 @@ def simulate_phenotype_from_raw(
         beta=betas,
         shift_var_fraction=float(sim_cfg["shift_var_fraction"]),
     )
+    betas = list(betas)
     out = pd.DataFrame({"IID": raw.iid, "HBF_SIM": ph.y})
     if "FID" in psam.columns:
         out.insert(0, "FID", raw.fid)
@@ -327,6 +358,91 @@ def simulate_phenotype_from_raw(
         "planted": loci_meta,
     }
     return out, meta
+
+
+def prereg_predictions(
+    config: dict,
+    raw_sentinels: RawGenotypes,
+    smap: pd.DataFrame,
+    raw_null: RawGenotypes,
+    psam: pd.DataFrame,
+    eigenvec: pd.DataFrame,
+) -> dict:
+    """Phase 2 step d: predictions from the real genotypes and PCs, before any phenotype.
+
+    * conditional power per testable sentinel (PC-adjusted and unadjusted),
+      with the planted effects, the population shift and alpha from the config;
+    * predicted lambda_GC (unadjusted and PC-adjusted) over the random null
+      variants, with its spread over shift draws (review item H).
+    """
+    from hbfgwas import predict
+
+    if list(raw_sentinels.iid) != list(raw_null.iid):
+        raise ValueError("sentinel and null exports have different samples")
+    sim_cfg = config["real_data_simulation"]
+    pcfg = config["prediction"]
+    h = float(sim_cfg["shift_var_fraction"])
+    alpha = config["association"]["genome_wide_alpha"]
+    threshold = config["acceptance"]["locus_recovery"]["required_if_predicted_power_at_least"]
+    pops = psam.set_index("IID").reindex(raw_sentinels.iid)[sim_cfg["population_column"]]
+    if pops.isna().any():
+        raise ValueError("some exported samples have no population label in the .psam")
+    n_pcs = int(config["pca"]["n_pcs"])
+    pcs = (
+        eigenvec.set_index("IID")
+        .reindex(raw_sentinels.iid)[[f"PC{i}" for i in range(1, n_pcs + 1)]]
+        .to_numpy()
+    )
+    if np.isnan(pcs).any():
+        raise ValueError("some exported samples have no PCs")
+    seq = np.random.SeedSequence(int(config["seeds"]["real_prediction"]))
+    power_seed, lambda_seed = seq.spawn(2)
+
+    geno, betas, meta = effect_allele_dosages(config, raw_sentinels, smap)
+    power_out = {}
+    for side, cov in (("pc_adjusted", pcs), ("unadjusted", None)):
+        res = predict.conditional_power(
+            geno,
+            betas,
+            alpha,
+            covariates=cov,
+            pop=pops.to_numpy(),
+            shift_var_fraction=h,
+            n_shift_draws=int(pcfg["power_shift_draws"]),
+            rng=np.random.default_rng(power_seed),
+        )
+        for m, r in zip(meta, res, strict=True):
+            power_out.setdefault(m["gene"], {})[side] = r
+    for m, j in zip(meta, range(geno.shape[1]), strict=True):
+        p = power_out[m["gene"]]
+        p["effect_allele_freq"] = float(geno[:, j].mean() / 2)
+        p["required"] = bool(p["pc_adjusted"]["power"] >= threshold)
+
+    null = raw_null.genotypes
+    null = null[:, ~np.isnan(null).any(axis=0)]
+    lam = {}
+    for side, cov in (("unadjusted", None), ("pc_adjusted", pcs)):
+        lam[side] = predict.predicted_lambda(
+            null,
+            pops.to_numpy(),
+            h,
+            covariates=cov,
+            n_shift_draws=int(pcfg["lambda_shift_draws"]),
+            rng=np.random.default_rng(lambda_seed),
+        )
+    return {
+        "computed_before_any_phenotype": True,
+        "n_samples": int(len(raw_sentinels.iid)),
+        "alpha": alpha,
+        "shift_var_fraction": h,
+        "required_if_predicted_power_at_least": threshold,
+        "conditional_power": power_out,
+        "not_testable": [
+            g for g, i in zip(smap["gene"], smap["id"], strict=True) if not _has_id(i)
+        ],
+        "predicted_lambda_gc": lam,
+        "n_null_variants": int(null.shape[1]),
+    }
 
 
 def write_pheno(df: pd.DataFrame, path) -> None:
@@ -579,6 +695,17 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--n", type=int, required=True)
     p.add_argument("--seed", type=int, required=True)
     p.add_argument("--include", default=None)
+    p.add_argument("--exclude-around", default=None, help="sentinel map TSV (chrom, pos)")
+    p.add_argument("--window-bp", type=int, default=0)
+    p.add_argument("--out", required=True)
+
+    p = sub.add_parser("predictions")
+    p.add_argument("--config", default=None)
+    p.add_argument("--raw-sentinels", required=True)
+    p.add_argument("--map", required=True)
+    p.add_argument("--raw-null", required=True)
+    p.add_argument("--psam", required=True)
+    p.add_argument("--eigenvec", required=True)
     p.add_argument("--out", required=True)
 
     p = sub.add_parser("simulate-phenotype")
@@ -630,7 +757,11 @@ def main(argv: list[str] | None = None) -> int:
         print(rep[cols].to_string(index=False))
     elif a.cmd == "sample-ids":
         include = read_ids(a.include) if a.include else set()
-        ids = sample_ids(a.pvar, a.n, a.seed, include)
+        windows = []
+        if a.exclude_around:
+            m = pd.read_csv(a.exclude_around, sep="\t", dtype={"chrom": str, "id": str})
+            windows = [(r["chrom"], int(r["pos"])) for _, r in m.iterrows() if _has_id(r["id"])]
+        ids = sample_ids(a.pvar, a.n, a.seed, include, windows, a.window_bp)
         Path(a.out).write_text("".join(f"{i}\n" for i in ids))
         print(f"{len(ids)} variant IDs -> {a.out}")
     elif a.cmd == "simulate-phenotype":
@@ -640,6 +771,34 @@ def main(argv: list[str] | None = None) -> int:
         write_pheno(pheno, a.out)
         Path(a.meta).write_text(json.dumps(meta, indent=2) + "\n")
         print(f"simulated phenotype for {meta['n']} samples -> {a.out}")
+    elif a.cmd == "predictions":
+        config = load_config(a.config)
+        smap = pd.read_csv(a.map, sep="\t", dtype={"id": str, "chrom": str})
+        res = prereg_predictions(
+            config,
+            read_raw(a.raw_sentinels),
+            smap,
+            read_raw(a.raw_null),
+            read_psam(a.psam),
+            read_eigenvec(a.eigenvec),
+        )
+        Path(a.out).write_text(json.dumps(res, indent=2, default=float) + "\n")
+        lam = res["predicted_lambda_gc"]
+        for side in ("unadjusted", "pc_adjusted"):
+            x = lam[side]
+            print(
+                f"predicted lambda_GC {side}: {x['median']:.4f} "
+                f"[{x['q05']:.4f}, {x['q95']:.4f}] over {x['n_variants']} null variants"
+            )
+        for gene, p in res["conditional_power"].items():
+            print(
+                f"{gene}: conditional power {p['pc_adjusted']['power']:.4f} (PC-adjusted), "
+                f"{p['unadjusted']['power']:.4f} (unadjusted); "
+                f"{'REQUIRED' if p['required'] else 'reported, not gated'}"
+            )
+        for gene in res["not_testable"]:
+            print(f"{gene}: {NOT_TESTABLE}")
+        print(f"wrote {a.out}")
     elif a.cmd == "het-summary":
         s = het_summary(read_table(a.het))
         s.to_csv(a.out, sep="\t", index=False)

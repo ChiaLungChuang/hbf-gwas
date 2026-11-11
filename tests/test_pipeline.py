@@ -197,3 +197,9 @@ def test_read_raw_counted_alleles(tmp_path):
     assert raw.counted == ["G", "C", "A"]
     np.testing.assert_array_equal(raw.genotypes, g)
     json.dumps(raw.ids)
+
+
+def test_sample_ids_can_avoid_the_sentinels(pvar):
+    ids = pipeline.sample_ids(pvar, 10, seed=3, exclude_windows=[("2", 60718043)], window_bp=1000)
+    assert "rs1427407" not in ids and "rsA" not in ids  # rsA is 43 bp away
+    assert set(ids) == {"rs9399137", "rs41322148", "rsB"}

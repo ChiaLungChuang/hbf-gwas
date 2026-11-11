@@ -137,6 +137,7 @@ def e2e(tmp_path_factory):
     cfg = copy.deepcopy(load_config())
     cfg["qc"]["expected_afr_samples"] = {"min": 130, "max": 140}
     cfg["concordance"]["n_random_variants"] = 300
+    cfg["prediction"].update(n_null_variants=500, power_shift_draws=200, lambda_shift_draws=50)
     cfg_path = tmp / "synthetic_config.yaml"
     cfg_path.write_text(yaml.safe_dump(cfg, sort_keys=False))
     loci = tmp / "loci.tsv"
@@ -162,6 +163,7 @@ def e2e(tmp_path_factory):
         "02_qc.sh",
         "03_pca.sh",
         "03b_pc_plot.py",
+        "03c_prereg_predictions.sh",
         "04_assoc.sh",
         "05_report.py",
     ):
@@ -314,3 +316,18 @@ def test_e2e_every_plink2_log_is_kept(e2e):
     logs = {p.name for p in (e2e["run"] / "logs").glob("*.log")}
     for expected in ("afr.log", "afr_qc.log", "pca.3.log", "glm_pc.log", "glm_nopc.log"):
         assert expected in logs, sorted(logs)
+
+
+def test_e2e_prereg_predictions_before_any_phenotype(e2e):
+    # review item H: predicted lambda and conditional power exist before 04 runs
+    pred = json.loads((e2e["run"] / "prereg_predictions.json").read_text())
+    assert pred["computed_before_any_phenotype"] is True
+    assert set(pred["conditional_power"]) == {"BCL11A", "HBS1L-MYB", "HBB cluster"}
+    for side in ("unadjusted", "pc_adjusted"):
+        lam = pred["predicted_lambda_gc"][side]
+        assert 0.5 < lam["q05"] <= lam["median"] <= lam["q95"] < 10
+    assert pred["n_null_variants"] > 400
+    assert pred["not_testable"] == []
+    mtime_pred = (e2e["run"] / "prereg_predictions.json").stat().st_mtime
+    mtime_pheno = (e2e["data"] / "pheno.tsv").stat().st_mtime
+    assert mtime_pred < mtime_pheno  # written before the phenotype existed

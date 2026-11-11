@@ -92,3 +92,9 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   `--pfile <prefix> vzs` modifier instead of naming `--pgen/--pvar/--psam`.
   CI's plink2 pin will be changed to the build the user installs locally once
   the version string is known.
+- H: `hbfgwas.predict.predicted_lambda` (lambda_GC from genotypes before any
+  phenotype) and `scripts/03c_prereg_predictions.sh` (step d: predicted
+  lambda_GC and conditional power from the real genotypes and PCs). Checked on
+  simulated phenotypes and on the sim-v3 genotypes; documented in
+  `docs/power.md`, including that the sim-v1 analytic lambda formula
+  over-counts by about h/K.
