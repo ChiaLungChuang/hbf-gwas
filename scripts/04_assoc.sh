@@ -47,6 +47,9 @@ else
 fi
 
 # --- planted variants: sentinels present after QC ----------------------------
+# A sentinel absent from the callset (by rsID and by position) or removed by QC
+# is "not testable in this callset": it is not planted and no proxy is chosen
+# (review item C, docs/decisions.md D-028).
 "$PYTHON" -m hbfgwas.pipeline sentinels --pvar "$in.pvar" --loci "$loci" \
 	--out-ids "$DATA_DIR/planted_ids.txt" --out-map "$DATA_DIR/planted_map.tsv"
 cp "$DATA_DIR/planted_map.tsv" "$RUN_DIR/planted.tsv"

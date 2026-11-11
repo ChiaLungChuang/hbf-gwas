@@ -77,3 +77,7 @@ reasons are in [docs/decisions.md](docs/decisions.md).
 - B: `docs/power.md`: what beta_sd is relative to, the allele frequency of each
   simulated locus and why, sim-v1's analytic formula (with and without the
   partial-R2 step), and the conditional formula the criteria use.
+- C: a sentinel absent from the callset or failing QC is "not testable in this
+  callset" (no proxy), in the sentinel report, the real-data report and the
+  gate (status NOT TESTABLE); the gnomAD AFR frequency of rs7482144 is flagged
+  suspect in the locus table and the config.
