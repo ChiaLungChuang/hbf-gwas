@@ -15,7 +15,9 @@ Contents (each special record has a known fate):
   multiallelic sites (4 records), 2 records sharing the ID rsDUP.
 * 10 records with ID "." -> renamed chrom:pos:ref:alt by 01 and kept.
 * removed by 02: 10 monomorphic (rsMONO*) and 5 singleton (rsRARE*) records by
-  --maf; 5 all-heterozygous records (rsHWE*) by --hwe.
+  --maf; 5 all-heterozygous records (rsHWE*) by --hwe (excess heterozygosity).
+* kept by 02: 3 records with no heterozygotes at all (rsFEWHET*), a
+  heterozygote deficit that --hwe ... keep-fewhet does not filter.
 """
 
 from __future__ import annotations
@@ -49,6 +51,7 @@ REMOVED_BY_01 = ["rsX1", "rsINDEL1", "rsMULTI1", "rsSPLIT1a", "rsSPLIT1b", "rsDU
 REMOVED_BY_MAF = [f"rsMONO{i}" for i in range(10)] + [f"rsRARE{i}" for i in range(5)]
 REMOVED_BY_HWE = [f"rsHWE{i}" for i in range(5)]
 KEPT = ["rs1427407", "rs9399137", "rs41322148"]
+KEPT_BY_KEEP_FEWHET = [f"rsFEWHET{i}" for i in range(3)]
 
 
 def _samples():
@@ -142,6 +145,9 @@ def build(out_dir: Path, plink2: str = "plink2", zstd: str = "zstd", seed: int =
         add("3", free_pos("3"), f"rsRARE{i}", "G", "A", gts)
     for i in range(5):
         add("3", free_pos("3"), f"rsHWE{i}", "T", "C", ["0/1"] * n)
+    # heterozygote deficit (no hets at all): kept by --hwe ... keep-fewhet
+    for i in range(3):
+        add("3", free_pos("3"), f"rsFEWHET{i}", "A", "G", ["0/0", "1/1"] * (n // 2))
 
     order = {c: k for k, c in enumerate(["1", "2", "3", "6", "11", "X"])}
     records.sort(key=lambda r: (order[r[0]], r[1]))

@@ -224,8 +224,9 @@ def test_e2e_qc_table_and_missingness_message(e2e):
     ids = _ids(e2e["data"] / "afr_qc.pvar")
     for vid in synth.REMOVED_BY_MAF + synth.REMOVED_BY_HWE:
         assert vid not in ids, vid
-    for vid in synth.KEPT:
+    for vid in synth.KEPT + synth.KEPT_BY_KEEP_FEWHET:
         assert vid in ids, vid
+    assert t.loc[3, "filter"].endswith("keep-fewhet")
 
 
 def test_e2e_sentinel_report(e2e):

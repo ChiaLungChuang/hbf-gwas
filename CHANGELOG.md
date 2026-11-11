@@ -81,3 +81,6 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   callset" (no proxy), in the sentinel report, the real-data report and the
   gate (status NOT TESTABLE); the gnomAD AFR frequency of rs7482144 is flagged
   suspect in the locus table and the config.
+- D: HWE QC uses `--hwe 1e-6 midp keep-fewhet` (only excess heterozygosity
+  filtered); the README explains why. The synthetic fileset gains
+  heterozygote-deficit records that must be kept.
