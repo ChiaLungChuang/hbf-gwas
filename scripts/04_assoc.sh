@@ -22,6 +22,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 . "$here/_common.sh"
 need "$PLINK2"
 setup_dirs
+check_plink_version
 
 in="$DATA_DIR/afr_qc"
 keep="$DATA_DIR/unrelated.id"

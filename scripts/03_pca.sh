@@ -14,6 +14,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 . "$here/_common.sh"
 need "$PLINK2"
 setup_dirs
+check_plink_version
 
 in="$DATA_DIR/afr_qc"
 n_pcs=$(cfg pca.n_pcs)

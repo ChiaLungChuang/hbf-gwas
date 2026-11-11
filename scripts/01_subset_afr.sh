@@ -16,6 +16,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 . "$here/_common.sh"
 need "$PLINK2"
 setup_dirs
+check_plink_version
 
 in="$DATA_DIR/all_phase3"
 rel="$DATA_DIR/deg2_phase3.king.cutoff.out.id"

@@ -98,3 +98,6 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   simulated phenotypes and on the sim-v3 genotypes; documented in
   `docs/power.md`, including that the sim-v1 analytic lambda formula
   over-counts by about h/K.
+- G (follow-up): plink2 pinned to Beta 1.4 (7 Nov 2026) in `config/analysis.yaml`
+  for the user's Mac (arm64) and CI (Linux x86_64); CI checks the version
+  string and every real-data script refuses another version.

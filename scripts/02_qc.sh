@@ -20,6 +20,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 . "$here/_common.sh"
 need "$PLINK2"
 setup_dirs
+check_plink_version
 
 in="$DATA_DIR/afr"
 geno=$(cfg qc.geno)
