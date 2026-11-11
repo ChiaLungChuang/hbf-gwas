@@ -108,3 +108,57 @@ def test_shift_vectors_have_the_simulation_law(scenario):
     np.testing.assert_allclose(sh.var(axis=0), s["h"], rtol=1e-10)
     for k in np.unique(s["pop"]):
         assert np.ptp(sh[s["pop"] == k], axis=0).max() < 1e-12
+
+
+# --- predicted lambda_GC (review item H) ------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def lam_scenario():
+    rng = np.random.default_rng(808)
+    sizes = [150, 150, 150]
+    g = sim.simulate_genotypes(sizes, fst=0.05, rng=rng, n_variants=4000)
+    pcs = assoc.pca(g.genotypes[:, :2000], n_pcs=5).pcs
+    return dict(g=g.genotypes[:, 2000:].astype(float), pop=g.pop, pcs=pcs, h=0.15)
+
+
+def test_mixture_median_of_central_chi2_is_the_chi2_median():
+    m = predict.mixture_median_chi2(np.zeros(100))
+    assert m == pytest.approx(stats.chi2.ppf(0.5, 1), rel=1e-6)
+
+
+def test_mixture_median_matches_simulation():
+    rng = np.random.default_rng(9)
+    d2 = rng.uniform(0, 4, 500)
+    draws = (rng.standard_normal((400, 500)) + np.sqrt(d2)) ** 2
+    assert predict.mixture_median_chi2(d2) == pytest.approx(np.median(draws), rel=0.01)
+
+
+@pytest.mark.parametrize("adjusted", [False, True])
+def test_lambda_for_a_given_shift_matches_the_observed_lambda(lam_scenario, adjusted):
+    """Same shift draw, fresh noise: predicted lambda tracks the observed one."""
+    s = lam_scenario
+    cov = s["pcs"] if adjusted else None
+    rng = np.random.default_rng(10)
+    errs = []
+    for _ in range(8):
+        shift = predict.shift_vectors(s["pop"], s["h"], 1, rng)[:, 0]
+        y = shift + rng.standard_normal(shift.size) * np.sqrt(1 - s["h"])
+        observed = assoc.lambda_gc(assoc.linear_assoc(s["g"], y, cov).p)
+        predicted = predict.lambda_for_shift(s["g"], shift, covariates=cov)
+        errs.append(observed - predicted)
+    assert abs(np.mean(errs)) < 0.04, errs
+    if not adjusted:
+        assert predicted > 1.5  # strong structure: clearly inflated
+
+
+def test_predicted_lambda_summary(lam_scenario):
+    s = lam_scenario
+    out = predict.predicted_lambda(s["g"], s["pop"], s["h"], n_shift_draws=50,
+                                   rng=np.random.default_rng(11))
+    adj = predict.predicted_lambda(s["g"], s["pop"], s["h"], covariates=s["pcs"],
+                                   n_shift_draws=50, rng=np.random.default_rng(11))
+    assert out["q05"] <= out["median"] <= out["q95"]
+    assert out["median"] > 1.5
+    assert adj["median"] == pytest.approx(1.0, abs=0.06)
+    assert out["n_variants"] == 2000 and out["n_shift_draws"] == 50
