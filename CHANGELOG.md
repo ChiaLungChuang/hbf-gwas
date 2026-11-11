@@ -74,3 +74,6 @@ reasons are in [docs/decisions.md](docs/decisions.md).
 - sim-v3: seed 20261111 pre-registered (c2ca787) and predictions declared
   (88d4530), each pushed before the single run; gate PASSED
   (`runs/2026-11-11-sim-v3/`). `docs/figures/` now shows sim-v3.
+- B: `docs/power.md`: what beta_sd is relative to, the allele frequency of each
+  simulated locus and why, sim-v1's analytic formula (with and without the
+  partial-R2 step), and the conditional formula the criteria use.

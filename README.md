@@ -67,7 +67,8 @@ Fst 0.01) and simulated phenotype. Summary numbers:
    realised genotypes and PCs, computed before any phenotype. Under sim-v3 a
    locus is *required* in the single scan only at predicted power >= 0.99;
    every locus's predicted power is checked against empirical power over 2000
-   redraws.
+   redraws. Formulas, units ("beta in SD units") and allele frequencies:
+   [docs/power.md](docs/power.md).
 3. **Simulation** (`hbfgwas.simulate`): Balding-Nichols genotypes with
    configurable Fst; a phenotype with three separate components (planted
    effects, a non-genetic shift by subpopulation, noise). It accepts real
