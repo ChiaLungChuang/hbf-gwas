@@ -251,6 +251,8 @@ def test_e2e_pca(e2e):
     ]
     # some synthetic SNPs sit inside the long-range LD regions and must be gone
     assert counts.loc[1, "variants"] < counts.loc[0, "variants"]
+    # review item E: the synthetic samples are unrelated, so KING removes nobody and says so
+    assert "--king-cutoff 0.0884 removed 0 samples" in e2e["out"]["03_pca.sh"].stderr
 
 
 def test_e2e_association_outputs(e2e):

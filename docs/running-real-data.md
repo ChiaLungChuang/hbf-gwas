@@ -67,7 +67,9 @@ What to expect and check:
   Genomes frequency in Ensembl and may be stored under rs41322148 or be
   absent.
 * `03`: long-range LD regions come from `resources/long_range_ld_grch37.tsv`
-  (every entry unverified; see `resources/README.md`).
+  (every entry unverified; see `resources/README.md`). The KING step runs
+  even though the 1000 Genomes related-sample list was already removed; if
+  it removes nobody, the script says so, as 02 does for `--geno`/`--mind`.
 * The PC1 vs PC2 plot by the seven AFR populations is produced by
   `05_report.py`; to look at it after step 3, inspect `data/1kg/pca.eigenvec`
   with the `Population` column of `data/1kg/afr_qc.psam`.
