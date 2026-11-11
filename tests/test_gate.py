@@ -45,8 +45,8 @@ def test_all_pass():
     checks = gate.evaluate(CONFIG, GOOD, experiment="simulated")
     assert not gate.any_failed(checks)
     assert _status(checks, "locus A recovery") == "PASS"
-    assert _status(checks, "locus B recovery") == "NOT REQUIRED"
-    assert _status(checks, "locus C recovery") == "NOT REQUIRED"
+    assert _status(checks, "locus B recovery") == "REPORTED"
+    assert _status(checks, "locus C recovery") == "REPORTED"
 
 
 @pytest.mark.parametrize(
@@ -95,7 +95,8 @@ def test_not_required_detail_states_power():
     checks = gate.evaluate(CONFIG, GOOD, experiment="simulated")
     detail = next(c.detail for c in checks if c.name == "locus B recovery")
     assert "underpowered, not required" in detail
-    assert "0.40" in detail
+    assert "0.4000" in detail
+    assert "single scan: miss" in detail
 
 
 def test_inconsistent_recovered_flag_is_an_error():
@@ -153,3 +154,57 @@ def test_cli_exit_codes(tmp_path):
     assert fail.returncode == 1
     assert "FAIL" in fail.stdout
     assert run(good, "real").returncode == 2
+
+
+def _with_calibration(tol=0.05):
+    cfg = copy.deepcopy(CONFIG)
+    cfg["acceptance"]["simulated"]["power_calibration"] = {
+        "max_abs_diff": tol,
+        "status": "proposed",
+    }
+    res = copy.deepcopy(GOOD)
+    for loc, emp in zip(res["loci"], (0.96, 0.44, 0.12), strict=True):
+        loc["empirical_power"] = emp
+        loc["empirical_power_ci95"] = [emp - 0.02, emp + 0.02]
+    return cfg, res
+
+
+def test_power_calibration_passes_within_tolerance():
+    cfg, res = _with_calibration()
+    checks = gate.evaluate(cfg, res, experiment="simulated")
+    assert _status(checks, "locus B power calibration") == "PASS"  # 0.44 vs 0.40
+    assert not gate.any_failed(checks)
+
+
+def test_power_calibration_fails_outside_tolerance():
+    cfg, res = _with_calibration()
+    res["loci"][1]["empirical_power"] = 0.4501  # 0.0501 above 0.40
+    checks = gate.evaluate(cfg, res, experiment="simulated")
+    assert _status(checks, "locus B power calibration") == "FAIL"
+    res["loci"][1]["empirical_power"] = 0.45  # exactly at the tolerance passes
+    checks = gate.evaluate(cfg, res, experiment="simulated")
+    assert _status(checks, "locus B power calibration") == "PASS"
+
+
+def test_declared_predictions_must_be_reproduced():
+    res = copy.deepcopy(GOOD)
+    res["predictions_match_declared"] = False
+    checks = gate.evaluate(CONFIG, res, experiment="simulated")
+    assert _status(checks, "declared predictions reproduced") == "FAIL"
+
+
+def test_v3_rule_only_power_at_least_099_is_required():
+    cfg = copy.deepcopy(CONFIG)
+    cfg["acceptance"]["locus_recovery"] = {
+        "required_if_predicted_power_at_least": 0.99,
+        "not_required_label": "reported, not gated",
+    }
+    res = copy.deepcopy(GOOD)
+    res["loci"][0].update(predicted_power=0.995, p_adjusted=1e-12, recovered=True)
+    res["loci"][1].update(predicted_power=0.98, p_adjusted=1e-6, recovered=False)  # sim-v2-like
+    checks = gate.evaluate(cfg, res, experiment="simulated")
+    assert _status(checks, "locus A recovery") == "PASS"
+    assert _status(checks, "locus B recovery") == "REPORTED"
+    assert not gate.any_failed(checks)
+    res["loci"][0].update(p_adjusted=1e-7, recovered=False)
+    assert gate.any_failed(gate.evaluate(cfg, res, experiment="simulated"))

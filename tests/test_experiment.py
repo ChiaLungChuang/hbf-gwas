@@ -25,13 +25,10 @@ def small_config():
     exp["n_per_subpop"] = [60] * 7
     exp["n_null_variants"] = 3000
     exp["power_reps"] = 40
-    cfg["seeds"] = {
-        "sim_genotypes": 11,
-        "sim_phenotype": 12,
-        "sim_power_reps": 13,
-        "real_phenotype": 14,
-        "real_concordance_sample": 15,
-    }
+    exp["prediction_shift_draws"] = 50
+    exp["predicted"]["conditional_power_pc_adjusted"] = {}
+    exp["seed_key"] = "test_seed"
+    cfg["seeds"] = {"test_seed": 11, "real_phenotype": 14, "real_concordance_sample": 15}
     return cfg
 
 
@@ -78,11 +75,21 @@ def test_deterministic(small_config, small_results):
     ]
 
 
-def test_predictions_are_recomputed_from_the_config(small_config, small_results):
+def test_predictions_are_recomputed_from_the_genotypes(small_config, small_results):
     # sizes changed, so predicted power must come from the code, not the YAML numbers
     for loc in small_results["loci"]:
-        assert 0 < loc["predicted_power"] < 1
+        assert 0 < loc["predicted_power"] <= 1
     assert small_results["predicted"]["unadjusted_lambda_gc"] > 1
+    assert small_results["predictions_match_declared"] is False  # nothing declared here
+    cond = experiment.conditional_predictions(small_config)["pc_adjusted"]
+    assert [cond[x["locus"]]["power"] for x in small_results["loci"]] == [
+        x["predicted_power"] for x in small_results["loci"]
+    ]
+
+
+def test_planted_effects_are_the_per_allele_betas(small_config, small_results):
+    betas = [p["beta_sd"] for p in small_config["simulated_experiment"]["planted"]]
+    assert [x["beta_planted"] for x in small_results["loci"]] == betas
 
 
 def test_writes_outputs(tmp_path, small_config, small_results):
@@ -100,3 +107,26 @@ def test_summary_comparison(small_results):
     other = copy.deepcopy(s)
     other["adjusted"]["lambda_gc"] += 0.01
     assert experiment.compare_summaries(s, other)
+
+
+def test_unregistered_seed_runs_nothing(small_config):
+    cfg = copy.deepcopy(small_config)
+    cfg["seeds"]["test_seed"] = None
+    with pytest.raises(experiment.NotPreregisteredError):
+        experiment.run_stratification(cfg)
+
+
+def test_seeds_are_spawned_from_one_seed(small_config, small_results):
+    seeds = experiment.experiment_seeds(small_config)
+    assert seeds["seed"] == 11
+    assert small_results["design"]["seeds"]["spawned_in_order"] == [
+        "genotypes",
+        "phenotype",
+        "power_reps",
+        "prediction",
+    ]
+    other = copy.deepcopy(small_config)
+    other["seeds"]["test_seed"] = 12
+    a = experiment.simulate_genotypes_and_pcs(small_config)["plant"].genotypes
+    b = experiment.simulate_genotypes_and_pcs(other)["plant"].genotypes
+    assert (a != b).any()

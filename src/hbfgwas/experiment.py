@@ -6,6 +6,12 @@ effects at three variants plus a subpopulation shift, association without and
 with 10 PCs, and empirical power over repeated phenotype draws. The phenotype
 is simulated; nothing here is a measured trait.
 
+sim-v2 (after the Phase 1 review, issue #10): per-allele effects are planted
+directly (beta mode, as on real genotypes), predicted power is conditional on
+the realised genotypes and PCs (``hbfgwas.predict``) and computed before any
+phenotype is drawn, and empirical power comes from ``power_reps`` phenotype
+redraws tested at the planted variants only.
+
 ``run_stratification`` returns a results dict in the format the gate reads;
 ``write_outputs`` writes the full results JSON, a compact summary JSON, and the
 two-panel QQ figure.
@@ -25,7 +31,7 @@ import numpy as np
 from scipy import stats
 
 import hbfgwas
-from hbfgwas import assoc, power, simulate
+from hbfgwas import assoc, power, predict, simulate
 from hbfgwas.config import DEFAULT_CONFIG
 
 
@@ -36,8 +42,35 @@ def _binomial_ci95(k: int, n: int) -> list[float]:
     return [lo, hi]
 
 
-def predictions(config: dict) -> dict:
-    """Analytic predictions recomputed from the config's design."""
+class NotPreregisteredError(RuntimeError):
+    """The experiment's seed has not been pre-registered in the config yet."""
+
+
+SPAWN_ORDER = ("genotypes", "phenotype", "power_reps", "prediction")
+
+
+def experiment_seeds(config: dict) -> dict:
+    """Seeds for the current simulated experiment, spawned from ONE pre-registered seed.
+
+    ``seeds[simulated_experiment.seed_key]`` is split with numpy's
+    ``SeedSequence(seed).spawn(4)`` into genotypes, genome-wide-scan phenotype,
+    power redraws and prediction shift draws, in that order.
+    """
+    key = config["simulated_experiment"].get("seed_key")
+    if key is None:
+        raise ValueError("simulated_experiment.seed_key is not set")
+    seed = config["seeds"].get(key)
+    if seed is None:
+        raise NotPreregisteredError(
+            f"seeds.{key} is null: the {config['simulated_experiment'].get('version')} seed "
+            "has not been pre-registered yet"
+        )
+    children = np.random.SeedSequence(int(seed)).spawn(len(SPAWN_ORDER))
+    return {"seed_key": key, "seed": int(seed), **dict(zip(SPAWN_ORDER, children, strict=True))}
+
+
+def unconditional_predictions(config: dict) -> dict:
+    """sim-v1 analytic predictions (noncentral chi-square, partial R2); reference only."""
     exp = config["simulated_experiment"]
     n = int(sum(exp["n_per_subpop"]))
     alpha = config["association"]["genome_wide_alpha"]
@@ -53,16 +86,10 @@ def predictions(config: dict) -> dict:
     }
 
 
-def run_stratification(config: dict) -> dict:
-    t0 = time.time()
+def simulate_genotypes_and_pcs(config: dict) -> dict:
+    """The experiment's genotypes (spawned seed "genotypes") and PCs; no phenotype involved."""
     exp = config["simulated_experiment"]
-    seeds = config["seeds"]
-    alpha_gw = config["association"]["genome_wide_alpha"]
-    alpha_t1 = config["association"]["type1_alpha"]
-    n_pcs = exp["n_pcs"]
-    planted = exp["planted"]
-
-    rng_g = np.random.default_rng(seeds["sim_genotypes"])
+    rng_g = np.random.default_rng(experiment_seeds(config)["genotypes"])
     null = simulate.simulate_genotypes(
         exp["n_per_subpop"],
         fst=exp["fst"],
@@ -74,34 +101,80 @@ def run_stratification(config: dict) -> dict:
         exp["n_per_subpop"],
         fst=exp["fst"],
         rng=rng_g,
-        ancestral_freq=np.array([p["ancestral_freq"] for p in planted]),
+        ancestral_freq=np.array([p["ancestral_freq"] for p in exp["planted"]]),
     )
-    pop = null.pop
+    pcs = assoc.pca(null.genotypes, n_pcs=exp["n_pcs"])
+    return {"null": null, "plant": plant, "pcs": pcs, "pop": null.pop}
+
+
+def conditional_predictions(config: dict, sim: dict | None = None) -> dict:
+    """Power at each planted variant, conditional on the realised genotypes and PCs.
+
+    Computed before any phenotype is drawn (genotypes, PCs, betas, and the
+    shift's law only). The PC-adjusted values decide which loci are REQUIRED
+    and are the predictions the power-calibration criterion is judged against.
+    """
+    exp = config["simulated_experiment"]
+    sim = sim or simulate_genotypes_and_pcs(config)
+    g = sim["plant"].genotypes.astype(float)
+    betas = np.array([p["beta_sd"] for p in exp["planted"]])
+    alpha = config["association"]["genome_wide_alpha"]
+    h = exp["shift_var_fraction"]
+    out = {}
+    for side, cov in (("pc_adjusted", sim["pcs"].pcs), ("unadjusted", None)):
+        res = predict.conditional_power(
+            g,
+            betas,
+            alpha,
+            covariates=cov,
+            pop=sim["pop"],
+            shift_var_fraction=h,
+            n_shift_draws=exp["prediction_shift_draws"],
+            rng=np.random.default_rng(experiment_seeds(config)["prediction"]),
+        )
+        out[side] = {p["locus"]: r for p, r in zip(exp["planted"], res, strict=True)}
+    return out
+
+
+def run_stratification(config: dict) -> dict:
+    t0 = time.time()
+    exp = config["simulated_experiment"]
+    seeds = experiment_seeds(config)  # raises NotPreregisteredError before anything runs
+    alpha_gw = config["association"]["genome_wide_alpha"]
+    alpha_t1 = config["association"]["type1_alpha"]
+    n_pcs = exp["n_pcs"]
+    planted = exp["planted"]
+    tol = (config["acceptance"]["simulated"].get("power_calibration") or {}).get("max_abs_diff")
+
+    sim = simulate_genotypes_and_pcs(config)
+    null, plant, pcs, pop = sim["null"], sim["plant"], sim["pcs"], sim["pop"]
     n = pop.size
     monomorphic_null = int(np.sum(np.ptp(null.genotypes, axis=0) == 0))
-
-    pcs = assoc.pca(null.genotypes, n_pcs=n_pcs)
-
-    r2 = [p["r2"] for p in planted]
+    betas = [p["beta_sd"] for p in planted]
     h = exp["shift_var_fraction"]
+
+    # Predictions first: genotypes and PCs only, no phenotype yet.
+    cond = conditional_predictions(config, sim)
+
+    # One genome-wide scan with the pre-registered phenotype seed.
     pheno = simulate.simulate_phenotype(
         plant.genotypes,
         pop,
-        rng=np.random.default_rng(seeds["sim_phenotype"]),
-        r2=r2,
+        rng=np.random.default_rng(seeds["phenotype"]),
+        beta=betas,
         shift_var_fraction=h,
     )
-
     raw = assoc.linear_assoc(null.genotypes, pheno.y)
     adj = assoc.linear_assoc(null.genotypes, pheno.y, pcs.pcs)
     raw_pl = assoc.linear_assoc(plant.genotypes, pheno.y)
     adj_pl = assoc.linear_assoc(plant.genotypes, pheno.y, pcs.pcs)
 
+    # Empirical power: phenotype redraws, tested at the planted variants only.
     reps = simulate.simulate_phenotype(
         plant.genotypes,
         pop,
-        rng=np.random.default_rng(seeds["sim_power_reps"]),
-        r2=r2,
+        rng=np.random.default_rng(seeds["power_reps"]),
+        beta=betas,
         shift_var_fraction=h,
         n_reps=exp["power_reps"],
     )
@@ -110,34 +183,56 @@ def run_stratification(config: dict) -> dict:
     hits = (rep_adj.p < alpha_gw).sum(axis=1)
     hits_raw = (rep_raw.p < alpha_gw).sum(axis=1)
 
-    pred = predictions(config)
-    declared = exp.get("predicted", {})
+    uncond = unconditional_predictions(config)
+    declared = exp.get("predicted", {}).get("conditional_power_pc_adjusted", {})
     loci = []
     for j, p in enumerate(planted):
+        name = p["locus"]
         k = int(hits[j])
+        emp = k / exp["power_reps"]
+        pa, pu = cond["pc_adjusted"][name], cond["unadjusted"][name]
         loci.append(
             {
-                "locus": p["locus"],
-                "r2_planted": float(pheno.r2_realized[j]),
+                "locus": name,
                 "beta_planted": float(pheno.betas[j]),
+                "r2_realized": float(pheno.r2_realized[j]),
                 "sample_freq": float(plant.genotypes[:, j].mean() / 2),
-                "predicted_power": pred["power_pc_adjusted"][p["locus"]],
+                "predicted_power": pa["power"],
+                "predicted_power_mc_se": pa["power_mc_se"],
+                "predicted_detail": {
+                    k2: pa[k2]
+                    for k2 in (
+                        "expected_beta",
+                        "leakage",
+                        "genotype_variance_kept",
+                        "mean_noncentrality",
+                        "mean_effective_critical_t",
+                    )
+                },
+                "predicted_power_unadjusted": pu["power"],
+                "predicted_power_unconditional_v1": uncond["power_pc_adjusted"][name],
                 "p_unadjusted": float(raw_pl.p[j]),
                 "p_adjusted": float(adj_pl.p[j]),
                 "beta_adjusted": float(adj_pl.beta[j]),
                 "recovered": bool(adj_pl.p[j] < alpha_gw),
-                "empirical_power": k / exp["power_reps"],
+                "empirical_power": emp,
                 "empirical_power_ci95": _binomial_ci95(k, exp["power_reps"]),
+                "empirical_minus_predicted": emp - pa["power"],
+                "power_calibration_tolerance": tol,
                 "empirical_power_unadjusted": int(hits_raw[j]) / exp["power_reps"],
+                "empirical_power_unadjusted_ci95": _binomial_ci95(
+                    int(hits_raw[j]), exp["power_reps"]
+                ),
             }
         )
 
-    declared_power = declared.get("power_pc_adjusted", {})
-    match = bool(declared_power) and all(
-        abs(declared_power[loc] - pred["power_pc_adjusted"][loc]) < 5e-4 for loc in declared_power
+    match = bool(declared) and all(
+        abs(declared[name] - cond["pc_adjusted"][name]["power"]) < 5e-4 for name in declared
     )
     return {
         "experiment": "simulated",
+        "prereg_version": config.get("prereg", {}).get("version"),
+        "criteria_version": exp.get("version"),
         "description": "stratification on simulated genotypes; phenotype simulated",
         "design": {
             "n": int(n),
@@ -147,8 +242,14 @@ def run_stratification(config: dict) -> dict:
             "fst": exp["fst"],
             "shift_var_fraction": h,
             "n_pcs": n_pcs,
+            "planted_effect_mode": "beta (per-allele beta_sd)",
             "power_reps": exp["power_reps"],
-            "seeds": {k: seeds[k] for k in ("sim_genotypes", "sim_phenotype", "sim_power_reps")},
+            "prediction_shift_draws": exp["prediction_shift_draws"],
+            "seeds": {
+                "seed_key": seeds["seed_key"],
+                "seed": seeds["seed"],
+                "spawned_in_order": list(SPAWN_ORDER),
+            },
         },
         "fst_estimate": simulate.estimate_fst(null.genotypes, pop),
         "pca_eigenvalues": pcs.eigenvalues.tolist(),
@@ -171,7 +272,7 @@ def run_stratification(config: dict) -> dict:
             "n_covariates": n_pcs,
         },
         "loci": loci,
-        "predicted": pred,
+        "predicted": {"unadjusted_lambda_gc": uncond["unadjusted_lambda_gc"]},
         "predictions_match_declared": match,
         "_pvalues": {"unadjusted": raw.p, "adjusted": adj.p},  # for the figure; not serialised
         "runtime_s": time.time() - t0,
@@ -180,27 +281,25 @@ def run_stratification(config: dict) -> dict:
 
 def summarize(results: dict) -> dict:
     """Compact, figure-adjacent summary (what docs/figures/ keeps)."""
+    keys = (
+        "locus",
+        "predicted_power",
+        "empirical_power",
+        "empirical_power_ci95",
+        "empirical_minus_predicted",
+        "p_adjusted",
+        "recovered",
+    )
     return {
         "experiment": results["experiment"],
+        "prereg_version": results.get("prereg_version"),
         "design": results["design"],
         "unadjusted": results["unadjusted"],
         "adjusted": results["adjusted"],
         "fst_estimate": results["fst_estimate"],
-        "loci": [
-            {
-                k: loc[k]
-                for k in (
-                    "locus",
-                    "predicted_power",
-                    "p_adjusted",
-                    "recovered",
-                    "empirical_power",
-                    "empirical_power_ci95",
-                )
-            }
-            for loc in results["loci"]
-        ],
+        "loci": [{k: loc[k] for k in keys} for loc in results["loci"]],
         "predicted_unadjusted_lambda_gc": results["predicted"]["unadjusted_lambda_gc"],
+        "predictions_match_declared": results["predictions_match_declared"],
     }
 
 
@@ -219,10 +318,9 @@ def compare_summaries(a: dict, b: dict, tol: float = 1e-4) -> list[str]:
             diffs.append(f"{la['locus']}.p_adjusted: {la['p_adjusted']} vs {lb['p_adjusted']}")
         if la["recovered"] != lb["recovered"]:
             diffs.append(f"{la['locus']}.recovered differs")
-        if abs(la["empirical_power"] - lb["empirical_power"]) > 2e-3:
-            diffs.append(
-                f"{la['locus']}.empirical_power: {la['empirical_power']} vs {lb['empirical_power']}"
-            )
+        for key in ("empirical_power", "predicted_power"):
+            if abs(la[key] - lb[key]) > 2e-3:
+                diffs.append(f"{la['locus']}.{key}: {la[key]} vs {lb[key]}")
     return diffs
 
 

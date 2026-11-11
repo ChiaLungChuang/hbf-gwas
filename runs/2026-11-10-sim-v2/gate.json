@@ -1,0 +1,75 @@
+{
+  "passed": false,
+  "checks": [
+    {
+      "name": "unadjusted lambda_GC",
+      "status": "PASS",
+      "observed": 1.3824782929831796,
+      "criterion": "> 1.2",
+      "detail": ""
+    },
+    {
+      "name": "PC-adjusted lambda_GC",
+      "status": "PASS",
+      "observed": 1.002986894903118,
+      "criterion": ">= 0.97 and <= 1.05",
+      "detail": ""
+    },
+    {
+      "name": "PC-adjusted type I error",
+      "status": "PASS",
+      "observed": 0.05091,
+      "criterion": "at alpha 0.05: >= 0.04 and <= 0.06",
+      "detail": ""
+    },
+    {
+      "name": "locus BCL11A recovery",
+      "status": "PASS",
+      "observed": "p = 6.81e-22",
+      "criterion": "p < 5e-08 if predicted power >= 0.8",
+      "detail": "REQUIRED (predicted power 1.00); recovered"
+    },
+    {
+      "name": "locus HBS1L-MYB recovery",
+      "status": "FAIL",
+      "observed": "p = 1.24e-06",
+      "criterion": "p < 5e-08 if predicted power >= 0.8",
+      "detail": "REQUIRED (predicted power 0.81); not recovered"
+    },
+    {
+      "name": "locus HBB cluster recovery",
+      "status": "NOT REQUIRED",
+      "observed": "p = 6.81e-07",
+      "criterion": "p < 5e-08 if predicted power >= 0.8",
+      "detail": "underpowered, not required (predicted power 0.46); not recovered"
+    },
+    {
+      "name": "locus BCL11A power calibration",
+      "status": "PASS",
+      "observed": "0.999 vs 1.000",
+      "criterion": "|empirical - predicted| <= 0.05 (proposed)",
+      "detail": "empirical 95% CI [0.996, 1.000]; difference -0.001"
+    },
+    {
+      "name": "locus HBS1L-MYB power calibration",
+      "status": "PASS",
+      "observed": "0.806 vs 0.809",
+      "criterion": "|empirical - predicted| <= 0.05 (proposed)",
+      "detail": "empirical 95% CI [0.788, 0.823]; difference -0.003"
+    },
+    {
+      "name": "locus HBB cluster power calibration",
+      "status": "PASS",
+      "observed": "0.451 vs 0.462",
+      "criterion": "|empirical - predicted| <= 0.05 (proposed)",
+      "detail": "empirical 95% CI [0.429, 0.473]; difference -0.011"
+    },
+    {
+      "name": "declared predictions reproduced",
+      "status": "PASS",
+      "observed": true,
+      "criterion": "predicted power recomputed by the run equals the value declared in the config",
+      "detail": ""
+    }
+  ]
+}

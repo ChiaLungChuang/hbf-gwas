@@ -1,0 +1,13 @@
+no shift, 5 PCs                locus 0: empirical 0.4451 | new 0.4444 (+0.31 SE) | old 0.4453
+no shift, 5 PCs                locus 1: empirical 0.0828 | new 0.0842 (-1.00 SE) | old 0.0897
+no shift, 5 PCs                locus 2: empirical 0.1119 | new 0.1139 (-1.22 SE) | old 0.1196
+no shift, no covariates        locus 0: empirical 0.4673 | new 0.4641 (+1.29 SE) | old 0.4647
+no shift, no covariates        locus 1: empirical 0.0613 | new 0.0623 (-0.85 SE) | old 0.0675
+no shift, no covariates        locus 2: empirical 0.1152 | new 0.1160 (-0.51 SE) | old 0.1219
+no shift, locus 1 alone        locus 0: empirical 0.1983 | new 0.1968 (+0.78 SE) | old 0.1968
+shift h=0.15, 5 PCs            locus 0: empirical 0.5803 | new 0.5764 (+1.56 SE) | old nan
+shift h=0.15, 5 PCs            locus 1: empirical 0.1230 | new 0.1229 (+0.10 SE) | old nan
+shift h=0.15, 5 PCs            locus 2: empirical 0.1660 | new 0.1654 (+0.34 SE) | old nan
+shift h=0.15, no covariates    locus 0: empirical 0.4965 | new 0.4913 (+1.32 SE) | old nan
+shift h=0.15, no covariates    locus 1: empirical 0.1571 | new 0.1575 (-0.17 SE) | old nan
+shift h=0.15, no covariates    locus 2: empirical 0.2634 | new 0.2693 (-1.94 SE) | old nan

@@ -2,7 +2,8 @@
 
 The criteria live in ``config/analysis.yaml`` under ``acceptance`` and were
 declared before any experiment ran. This module never changes them; it only
-reads them and reports PASS / FAIL / NOT REQUIRED for each one.
+reads them and reports PASS / FAIL for each gated criterion and REPORTED for
+results that are shown but not gated.
 
 Exit codes of ``python -m hbfgwas.gate``: 0 all criteria met, 1 at least one
 criterion failed, 2 the requested experiment has no pre-registered criteria.
@@ -25,7 +26,7 @@ class NotPreregisteredError(RuntimeError):
 @dataclass
 class Check:
     name: str
-    status: str  # PASS, FAIL or NOT REQUIRED
+    status: str  # PASS, FAIL, or REPORTED (shown, not gated)
     observed: object
     criterion: str
     detail: str = ""
@@ -62,13 +63,13 @@ def _locus_checks(config: dict, loci: list[dict]) -> list[Check]:
         name = f"locus {loc['locus']} recovery"
         observed = f"p = {loc['p_adjusted']:.3g}"
         crit = f"p < {alpha} if predicted power >= {threshold}"
-        outcome = "recovered" if recovered else "not recovered"
+        hit = "hit" if recovered else "miss"
         if power >= threshold:
             status = "PASS" if recovered else "FAIL"
-            detail = f"REQUIRED (predicted power {power:.2f}); {outcome}"
+            detail = f"REQUIRED (predicted power {power:.4f}); single scan: {hit}"
         else:
-            status = "NOT REQUIRED"
-            detail = f"{label} (predicted power {power:.2f}); {outcome}"
+            status = "REPORTED"
+            detail = f"{label} (predicted power {power:.4f}); single scan: {hit}"
         checks.append(Check(name, status, observed, crit, detail))
     return checks
 
@@ -103,6 +104,39 @@ def evaluate(config: dict, results: dict, experiment: str = "simulated") -> list
     ]
     checks[-1].criterion = f"at alpha {t1['alpha']}: " + checks[-1].criterion
     checks += _locus_checks(config, results.get("loci", []))
+    calib = criteria.get("power_calibration")
+    if calib:
+        checks += _calibration_checks(calib, results.get("loci", []))
+    if "predictions_match_declared" in results:
+        ok = bool(results["predictions_match_declared"])
+        checks.append(
+            Check(
+                "declared predictions reproduced",
+                "PASS" if ok else "FAIL",
+                ok,
+                "predicted power recomputed by the run equals the value declared in the config",
+            )
+        )
+    return checks
+
+
+def _calibration_checks(calib: dict, loci: list[dict]) -> list[Check]:
+    tol = calib["max_abs_diff"]
+    label = f" ({calib['status']})" if calib.get("status") else ""
+    checks = []
+    for loc in loci:
+        e, p = loc["empirical_power"], loc["predicted_power"]
+        lo, hi = loc.get("empirical_power_ci95", [float("nan")] * 2)
+        ok = abs(e - p) <= tol
+        checks.append(
+            Check(
+                f"locus {loc['locus']} power calibration",
+                "PASS" if ok else "FAIL",
+                f"{e:.3f} vs {p:.3f}",
+                f"|empirical - predicted| <= {tol}{label}",
+                f"empirical 95% CI [{lo:.3f}, {hi:.3f}]; difference {e - p:+.3f}",
+            )
+        )
     return checks
 
 

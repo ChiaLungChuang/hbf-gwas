@@ -20,8 +20,8 @@ column changes only when the pipeline has actually been run on 1000 Genomes.
 
 | Component | Run on simulated genotypes | Run on real 1000 Genomes genotypes |
 |---|---|---|
-| Stratification experiment: lambda_GC and type I error, unadjusted vs 10 PCs | yes, gate passed: lambda_GC 1.381 → 0.9995, type I error 0.0966 → 0.0507 ([run](runs/2026-11-10-sim-stratification/README.md)) | not yet run |
-| Locus recovery vs pre-computed power | yes: BCL11A (power 0.997, required) recovered at p = 5.7e-21; HBB cluster (0.531) and HBS1L-MYB (0.218) underpowered, not required, not recovered | not yet run |
+| Simulated experiment, current criteria version **sim-v3** | criteria pre-registered; seed not yet registered; **not yet run** | not yet run |
+| Simulated experiment, earlier versions (records) | sim-v1 **passed**; sim-v2 **failed** (see the history below) | n/a |
 | `00_download_1kg.sh` download + manifest | synthetic fileset, in CI | not yet run |
 | `01_subset_afr.sh` AFR subset, related samples, biallelic SNPs, duplicates | synthetic fileset, in CI | not yet run |
 | `02_qc.sh` per-filter QC table, sentinel report | synthetic fileset, in CI | not yet run |
@@ -30,32 +30,45 @@ column changes only when the pipeline has actually been run on 1000 Genomes.
 | `05_report.py` report and Python-vs-plink2 concordance | synthetic fileset, in CI | not yet run |
 | Locus table values (`src/hbfgwas/loci.py`) | all `verified: false`; awaiting user sign-off (#3) | n/a |
 
-![QQ plots of null variants on simulated genotypes, without and with 10 PCs](docs/figures/sim_stratification_qq.png)
+## Pre-registration history (simulated genotypes)
+
+Each version was declared in `config/analysis.yaml` before it ran. A
+failed version is never rerun or re-judged; its results stay committed as a
+record (`tests/test_records.py` pins them by checksum). **CI gates only the
+current criteria version** and skips the gate, with a notice, until that
+version's seed is pre-registered.
+
+| version | what was new | declared | result |
+|---|---|---|---|
+| sim-v1 | first pre-registration: lambda_GC > 1.2 unadjusted, [0.97, 1.05] with 10 PCs, type I error [0.04, 0.06]; a locus REQUIRED if its analytic power >= 0.8 | `f63e8bd` | **passed**: lambda_GC 1.381 → 0.9995, type I error 0.0507, BCL11A (0.997) recovered ([run](runs/2026-11-10-sim-stratification/README.md)). A non-gating check of empirical against predicted power disagreed at two loci. |
+| sim-v2 | after the Phase 1 review (#10): power predicted conditional on the realised genotypes; 2000 redraws; a proposed 0.05 calibration criterion. Claude also switched to planting the table's per-allele effect (D-022), which made HBS1L-MYB REQUIRED at predicted power 0.809 | `df3b117` | **failed**: power calibration agreed at all loci (within 0.011), but HBS1L-MYB, REQUIRED at 0.809, was missed in the single scan (p = 1.2e-6 > 5e-8) ([run](runs/2026-11-10-sim-v2/README.md), #14) |
+| sim-v3 | criteria amended **after the failed sim-v2 result** (#14, D-024): a single scan is one Bernoulli draw per locus, and a "required at 0.8" rule fails a correct pipeline about 19% of the time at power 0.81. Gated: lambda_GC and type I error as before; \|empirical - predicted\| power <= 0.05 per locus over 2000 redraws; a locus with conditional predicted power >= 0.99 must reach p < 5e-8 in the single scan. Every other locus's single-scan hit or miss is reported next to its predicted power, not gated | this amendment; seed pre-registered after it is merged | not yet run |
+
+The real-data pre-registration (Phase 2 step d) uses the sim-v3 rule.
+
+The figure below is from **sim-v2** (the latest run); it will be replaced by
+sim-v3's.
+
+![QQ plots of null variants on simulated genotypes, without and with 10 PCs (sim-v2)](docs/figures/sim_stratification_qq.png)
 
 *Simulated genotypes (n = 650, 100,000 null variants, 7 subpopulations,
 Fst 0.01) and simulated phenotype. Summary numbers:
 [docs/figures/sim_stratification_summary.json](docs/figures/sim_stratification_summary.json).*
-
-**One thing that did not agree.** Over 1000 phenotype redraws, empirical power
-matched the prediction for BCL11A (0.998 vs 0.997) but not for HBS1L-MYB
-(0.375 vs 0.218) or HBB cluster (0.419 vs 0.531). This is a secondary,
-non-gating outcome. The redraws hold one genotype realization fixed, so they
-measure power conditional on it, whereas the formula averages over genotype
-draws. A post hoc diagnostic accounts for most of the gap (details in the
-[run notes](runs/2026-11-10-sim-stratification/README.md)). Nothing was
-changed after the run; how to redesign this outcome is an open decision (#10).
 
 ## How it works
 
 1. **Pre-registration first.** `config/analysis.yaml` fixes QC thresholds, 10
    PCs, alpha = 5e-8, seeds, planted effects, and the acceptance criteria
    before any experiment runs. `tests/test_config.py` pins every value the
-   brief specifies. Real-data criteria are added later and tagged `prereg-v1`
+   brief specifies, and amendments the user made later. Real-data criteria are added later and tagged `prereg-v1`
    before any real association is run; `scripts/04_assoc.sh` checks the tag.
-2. **Analytic power** (`hbfgwas.power`): 1-df noncentral chi-square with
-   ncp = n R2 / (1 - R2). A locus is *required* to be recovered only if its
-   predicted power is >= 0.8; otherwise it is reported as "underpowered, not
-   required" with its power.
+2. **Predicted power.** `hbfgwas.power` is the analytic 1-df noncentral
+   chi-square (ncp = n R2 / (1 - R2)). `hbfgwas.predict.conditional_power` is
+   what the criteria use since sim-v2: power of the actual t-test given the
+   realised genotypes and PCs, computed before any phenotype. Under sim-v3 a
+   locus is *required* in the single scan only at predicted power >= 0.99;
+   every locus's predicted power is checked against empirical power over 2000
+   redraws.
 3. **Simulation** (`hbfgwas.simulate`): Balding-Nichols genotypes with
    configurable Fst; a phenotype with three separate components (planted
    effects, a non-genetic shift by subpopulation, noise). It accepts real
@@ -64,9 +77,10 @@ changed after the run; how to redesign this outcome is an open decision (#10).
    with covariates, exact PCA, lambda_GC, type I error, power, QQ plots, and a
    tolerance check against plink2 `--glm` output. plink2 does the genome-wide
    scan; this module is the tested reference it is compared with.
-5. **Gate** (`python -m hbfgwas.gate`): PASS / FAIL / NOT REQUIRED for each
-   criterion. CI re-runs the simulated experiment and the gate on every PR,
-   so a statistical regression breaks the build.
+5. **Gate** (`python -m hbfgwas.gate`): PASS / FAIL for each gated criterion,
+   REPORTED for results shown but not gated. CI re-runs the current version of
+   the simulated experiment and the gate on every PR, so a statistical
+   regression breaks the build.
 
 **1000 Genomes phase 3 is fully called** (no missing genotype calls), so the
 missingness filters `--geno 0.02` and `--mind 0.02` cannot remove anything;

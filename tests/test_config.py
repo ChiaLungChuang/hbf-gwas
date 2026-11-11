@@ -43,9 +43,12 @@ def test_simulated_acceptance_criteria_from_the_brief():
 
 
 def test_locus_recovery_criterion_does_not_demand_all_loci():
+    # The brief's rule was 0.8 ("underpowered, not required"). Amended by the user
+    # after the failed sim-v2 result (issue #14, D-024): REQUIRED only at >= 0.99,
+    # every other locus reported, not gated.
     rec = CFG["acceptance"]["locus_recovery"]
-    assert rec["required_if_predicted_power_at_least"] == 0.8
-    assert rec["not_required_label"] == "underpowered, not required"
+    assert rec["required_if_predicted_power_at_least"] == 0.99
+    assert rec["not_required_label"] == "reported, not gated"
     assert not any("all" in str(k).lower() for k in rec)
 
 
@@ -54,7 +57,9 @@ def test_real_data_criteria_not_written_before_phase2():
 
 
 def test_seeds_are_distinct_integers():
-    seeds = CFG["seeds"]
+    # The current experiment's seed may be null only until it is pre-registered.
+    key = CFG["simulated_experiment"]["seed_key"]
+    seeds = {k: v for k, v in CFG["seeds"].items() if not (k == key and v is None)}
     assert all(isinstance(v, int) for v in seeds.values())
     assert len(set(seeds.values())) == len(seeds)
 
@@ -75,7 +80,38 @@ def test_declared_predictions_match_the_code():
         r2 = power.r2_from_beta(planted["beta_sd"], planted["ancestral_freq"])
         assert planted["r2"] == pytest.approx(r2, abs=5e-6)
         p = power.power(n=n, alpha=alpha, r2=r2, covariate_r2=exp["shift_var_fraction"])
-        assert pred["power_pc_adjusted"][planted["locus"]] == pytest.approx(p, abs=5e-4)
+        assert pred["unconditional_power_pc_adjusted"][planted["locus"]] == pytest.approx(
+            p, abs=5e-4
+        )
+
+
+def test_predictions_cannot_be_declared_before_the_seed():
+    exp = CFG["simulated_experiment"]
+    if CFG["seeds"][exp["seed_key"]] is None:
+        assert exp["predicted"]["conditional_power_pc_adjusted"] is None
+
+
+def test_declared_conditional_predictions_match_the_code():
+    from hbfgwas import experiment
+
+    declared = CFG["simulated_experiment"]["predicted"]["conditional_power_pc_adjusted"]
+    if declared is None:
+        pytest.skip("sim-v3 predictions are declared together with the sim-v3 seed")
+    cond = experiment.conditional_predictions(CFG)["pc_adjusted"]
+    assert set(declared) == set(cond)
+    for locus, value in declared.items():
+        assert value == pytest.approx(cond[locus]["power"], abs=5e-4), locus
+
+
+def test_power_calibration_is_gated_at_005():
+    # issue #10 proposed it; issue #14 (sim-v3) makes it a gated criterion
+    assert CFG["acceptance"]["simulated"]["power_calibration"] == {"max_abs_diff": 0.05}
+
+
+def test_criteria_version_is_sim_v3():
+    assert CFG["prereg"]["version"] == "sim-v3"
+    assert CFG["simulated_experiment"]["version"] == "sim-v3"
+    assert CFG["simulated_experiment"]["seed_key"] == "sim_v3"
 
 
 def test_planted_loci_match_the_locus_table():
