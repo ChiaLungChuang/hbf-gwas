@@ -21,6 +21,11 @@ been decided and where the work stands, and check the open GitHub issues.
 - Never tune a simulation to hit a number. Fix seeds; report what comes out.
 - Never edit an acceptance criterion in `config/analysis.yaml` after seeing a
   result. If a criterion fails, stop and report it to the user.
+- Ask the user BEFORE any change to what is simulated (effect sizes,
+  frequencies, variance components, the phenotype model, seeds' roles) or to
+  how a criterion is judged (which prediction decides REQUIRED, thresholds,
+  gated vs reported). Declaring it in the config before a run is not enough
+  (docs/decisions.md D-027).
 - Locus table values stay `verified: false` until the user signs them off by
   hand.
 - All work goes through a branch and a PR whose description says what was

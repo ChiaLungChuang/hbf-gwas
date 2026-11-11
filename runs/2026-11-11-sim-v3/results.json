@@ -1,0 +1,184 @@
+{
+  "experiment": "simulated",
+  "prereg_version": "sim-v3",
+  "criteria_version": "sim-v3",
+  "description": "stratification on simulated genotypes; phenotype simulated",
+  "design": {
+    "n": 650,
+    "n_per_subpop": [
+      93,
+      93,
+      93,
+      93,
+      93,
+      93,
+      92
+    ],
+    "n_null_variants": 100000,
+    "monomorphic_null_variants": 0,
+    "fst": 0.01,
+    "shift_var_fraction": 0.2,
+    "n_pcs": 10,
+    "planted_effect_mode": "beta (per-allele beta_sd)",
+    "power_reps": 2000,
+    "prediction_shift_draws": 2000,
+    "seeds": {
+      "seed_key": "sim_v3",
+      "seed": 20261111,
+      "spawned_in_order": [
+        "genotypes",
+        "phenotype",
+        "power_reps",
+        "prediction"
+      ]
+    }
+  },
+  "fst_estimate": 0.009997887260716404,
+  "pca_eigenvalues": [
+    2.8880737672031245,
+    2.8808011476681212,
+    2.854967288602468,
+    2.8423995692115516,
+    2.8364306636721617,
+    2.8220977261154623,
+    1.1543497674031733,
+    1.1507322596190461,
+    1.1493283963878114,
+    1.149151621742688
+  ],
+  "phenotype_variance": {
+    "genetic": 0.12942415126779622,
+    "shift": 0.20000000000000004,
+    "noise": 0.7470654451251753,
+    "total": 1.0288028788652466
+  },
+  "unadjusted": {
+    "lambda_gc": 1.3422384698000696,
+    "type1_error": 0.08972,
+    "type1_alpha": 0.05,
+    "n_covariates": 0
+  },
+  "adjusted": {
+    "lambda_gc": 0.9979904423430074,
+    "type1_error": 0.05054,
+    "type1_alpha": 0.05,
+    "n_covariates": 10
+  },
+  "loci": [
+    {
+      "locus": "BCL11A",
+      "beta_planted": 0.456435,
+      "r2_realized": 0.08092882933406943,
+      "sample_freq": 0.25076923076923074,
+      "predicted_power": 0.995812865302052,
+      "predicted_power_mc_se": 9.550866836930931e-06,
+      "predicted_detail": {
+        "expected_beta": 0.43833249983721617,
+        "leakage": -0.018102500162783808,
+        "genotype_variance_kept": 0.9771785452779176,
+        "mean_noncentrality": 8.40932544778859,
+        "mean_effective_critical_t": 5.739469517391362
+      },
+      "predicted_power_unadjusted": 0.9358795090743933,
+      "predicted_power_unconditional_v1": 0.9972525570882103,
+      "p_unadjusted": 2.225699130716454e-06,
+      "p_adjusted": 3.4079084088829044e-09,
+      "beta_adjusted": 0.34096557847563685,
+      "recovered": true,
+      "empirical_power": 0.9945,
+      "empirical_power_ci95": [
+        0.9901803370101006,
+        0.9972513181853675
+      ],
+      "empirical_minus_predicted": -0.001312865302051991,
+      "power_calibration_tolerance": 0.05,
+      "empirical_power_unadjusted": 0.931,
+      "empirical_power_unadjusted_ci95": [
+        0.9189971240893333,
+        0.9417195948670768
+      ]
+    },
+    {
+      "locus": "HBS1L-MYB",
+      "beta_planted": 0.571,
+      "r2_realized": 0.02473204262485236,
+      "sample_freq": 0.03769230769230769,
+      "predicted_power": 0.031058356029647242,
+      "predicted_power_mc_se": 7.511064661427843e-05,
+      "predicted_detail": {
+        "expected_beta": 0.4791898869154625,
+        "leakage": -0.09181011308453746,
+        "genotype_variance_kept": 0.9796011358289874,
+        "mean_noncentrality": 4.064798078081701,
+        "mean_effective_critical_t": 5.96049414148398
+      },
+      "predicted_power_unadjusted": 0.024499291590080793,
+      "predicted_power_unconditional_v1": 0.21812037861254463,
+      "p_unadjusted": 4.2634275816224605e-06,
+      "p_adjusted": 7.509644739193653e-06,
+      "beta_adjusted": 0.5873351167669472,
+      "recovered": false,
+      "empirical_power": 0.03,
+      "empirical_power_ci95": [
+        0.022969550402137485,
+        0.03844885609627016
+      ],
+      "empirical_minus_predicted": -0.0010583560296472429,
+      "power_calibration_tolerance": 0.05,
+      "empirical_power_unadjusted": 0.0235,
+      "empirical_power_unadjusted_ci95": [
+        0.017316813015912903,
+        0.031128550818985364
+      ]
+    },
+    {
+      "locus": "HBB cluster",
+      "beta_planted": 0.407,
+      "r2_realized": 0.03338111599763304,
+      "sample_freq": 0.1176923076923077,
+      "predicted_power": 0.21603573978214352,
+      "predicted_power_mc_se": 0.00017745038712388398,
+      "predicted_detail": {
+        "expected_beta": 0.3717377168967086,
+        "leakage": -0.03526228310329138,
+        "genotype_variance_kept": 0.9722945691377299,
+        "mean_noncentrality": 5.122486900956237,
+        "mean_effective_critical_t": 5.921475758058907
+      },
+      "predicted_power_unadjusted": 0.11623964960404333,
+      "predicted_power_unconditional_v1": 0.531045614284533,
+      "p_unadjusted": 8.122587256940868e-05,
+      "p_adjusted": 2.9363261673762786e-06,
+      "beta_adjusted": 0.37730675771194083,
+      "recovered": false,
+      "empirical_power": 0.2035,
+      "empirical_power_ci95": [
+        0.18605025140859713,
+        0.22182328849595753
+      ],
+      "empirical_minus_predicted": -0.012535739782143535,
+      "power_calibration_tolerance": 0.05,
+      "empirical_power_unadjusted": 0.114,
+      "empirical_power_unadjusted_ci95": [
+        0.10039505030997951,
+        0.12874766314638275
+      ]
+    }
+  ],
+  "predicted": {
+    "unadjusted_lambda_gc": 1.3687943262411348
+  },
+  "predictions_match_declared": true,
+  "runtime_s": 4.866719007492065,
+  "provenance": {
+    "hbfgwas_version": "0.1.0",
+    "git_commit": "88d453015c32431f27b2d765e881c4a41e28671b",
+    "config_path": "/Users/cchuang/projects/hbf-gwas/config/analysis.yaml",
+    "config_sha256": "1ab9cc43e376a3e93a74a3ffa531d0e83215de17b85d7b914f26266742d9d7cd",
+    "python": "3.12.13",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "platform": "macOS-27.2-arm64-arm-64bit",
+    "run_utc": "2026-11-11T16:38:34Z"
+  }
+}

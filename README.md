@@ -20,7 +20,7 @@ column changes only when the pipeline has actually been run on 1000 Genomes.
 
 | Component | Run on simulated genotypes | Run on real 1000 Genomes genotypes |
 |---|---|---|
-| Simulated experiment, current criteria version **sim-v3** | criteria pre-registered; seed not yet registered; **not yet run** | not yet run |
+| Simulated experiment, current criteria version **sim-v3** | **gate passed** ([run](runs/2026-11-11-sim-v3/README.md)): lambda_GC 1.342 → 0.998 with 10 PCs, type I error 0.0505; BCL11A (predicted power 0.996, required) hit at p = 3.4e-9; power calibration within 0.013 at all three loci; HBS1L-MYB (0.031) and HBB cluster (0.216) missed, reported, not gated | not yet run |
 | Simulated experiment, earlier versions (records) | sim-v1 **passed**; sim-v2 **failed** (see the history below) | n/a |
 | `00_download_1kg.sh` download + manifest | synthetic fileset, in CI | not yet run |
 | `01_subset_afr.sh` AFR subset, related samples, biallelic SNPs, duplicates | synthetic fileset, in CI | not yet run |
@@ -42,14 +42,13 @@ version's seed is pre-registered.
 |---|---|---|---|
 | sim-v1 | first pre-registration: lambda_GC > 1.2 unadjusted, [0.97, 1.05] with 10 PCs, type I error [0.04, 0.06]; a locus REQUIRED if its analytic power >= 0.8 | `f63e8bd` | **passed**: lambda_GC 1.381 → 0.9995, type I error 0.0507, BCL11A (0.997) recovered ([run](runs/2026-11-10-sim-stratification/README.md)). A non-gating check of empirical against predicted power disagreed at two loci. |
 | sim-v2 | after the Phase 1 review (#10): power predicted conditional on the realised genotypes; 2000 redraws; a proposed 0.05 calibration criterion. Claude also switched to planting the table's per-allele effect (D-022), which made HBS1L-MYB REQUIRED at predicted power 0.809 | `df3b117` | **failed**: power calibration agreed at all loci (within 0.011), but HBS1L-MYB, REQUIRED at 0.809, was missed in the single scan (p = 1.2e-6 > 5e-8) ([run](runs/2026-11-10-sim-v2/README.md), #14) |
-| sim-v3 | criteria amended **after the failed sim-v2 result** (#14, D-024): a single scan is one Bernoulli draw per locus, and a "required at 0.8" rule fails a correct pipeline about 19% of the time at power 0.81. Gated: lambda_GC and type I error as before; \|empirical - predicted\| power <= 0.05 per locus over 2000 redraws; a locus with conditional predicted power >= 0.99 must reach p < 5e-8 in the single scan. Every other locus's single-scan hit or miss is reported next to its predicted power, not gated | this amendment; seed pre-registered after it is merged | not yet run |
+| sim-v3 | criteria amended **after the failed sim-v2 result** (#14, D-024): a single scan is one Bernoulli draw per locus, and a "required at 0.8" rule fails a correct pipeline about 19% of the time at power 0.81. Gated: lambda_GC and type I error as before; \|empirical - predicted\| power <= 0.05 per locus over 2000 redraws; a locus with conditional predicted power >= 0.99 must reach p < 5e-8 in the single scan. Every other locus's single-scan hit or miss is reported next to its predicted power, not gated | criteria #17 (on `main` via #18); seed `c2ca787` and predictions `88d4530`, each pushed before the run | **passed**: lambda_GC 1.342 → 0.998, type I error 0.0505, BCL11A (0.996, required) hit at p = 3.4e-9, calibration within 0.013 at every locus ([run](runs/2026-11-11-sim-v3/README.md)) |
 
 The real-data pre-registration (Phase 2 step d) uses the sim-v3 rule.
 
-The figure below is from **sim-v2** (the latest run); it will be replaced by
-sim-v3's.
+The figure below is from **sim-v3**, the current criteria version.
 
-![QQ plots of null variants on simulated genotypes, without and with 10 PCs (sim-v2)](docs/figures/sim_stratification_qq.png)
+![QQ plots of null variants on simulated genotypes, without and with 10 PCs (sim-v3)](docs/figures/sim_stratification_qq.png)
 
 *Simulated genotypes (n = 650, 100,000 null variants, 7 subpopulations,
 Fst 0.01) and simulated phenotype. Summary numbers:

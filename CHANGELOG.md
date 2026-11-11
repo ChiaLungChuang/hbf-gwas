@@ -68,3 +68,9 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   set. `tests/test_records.py` pins the sim-v1 and sim-v2 records. Post hoc
   audit for #14 in `runs/2026-11-11-hbs1l-myb-audit/`. README history of
   sim-v1 (passed), sim-v2 (failed) and sim-v3.
+- D-027: D-022 recorded as Claude's decision, approved by the user on
+  2026-11-11 after review; CLAUDE.md now requires asking before any change to
+  what is simulated or how a criterion is judged.
+- sim-v3: seed 20261111 pre-registered (c2ca787) and predictions declared
+  (88d4530), each pushed before the single run; gate PASSED
+  (`runs/2026-11-11-sim-v3/`). `docs/figures/` now shows sim-v3.
