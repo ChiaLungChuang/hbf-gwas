@@ -86,6 +86,19 @@ Fst 0.01) and simulated phenotype. Summary numbers:
 missingness filters `--geno 0.02` and `--mind 0.02` cannot remove anything;
 `scripts/02_qc.sh` says so explicitly when it runs.
 
+**HWE uses plink2's `keep-fewhet` modifier** (`--hwe 1e-6 midp keep-fewhet`).
+The QC is run on the seven AFR populations pooled, two of them admixed
+(ASW, ACB). Pooling differentiated populations lowers heterozygosity below
+the Hardy-Weinberg level at exactly the variants whose frequencies differ
+between populations (the Wahlund effect), so a two-sided HWE filter would
+preferentially remove ancestry-informative variants. Genotyping errors
+mostly show up as *excess* heterozygosity, and `keep-fewhet` removes only
+those. The plink2 documentation recommends this mode when stratification is
+present, and without `k` or `keep-fewhet` recent builds refuse settings they
+consider too strict for the sample size. CI checks that the pinned build
+accepts the modifier: synthetic all-heterozygous records are removed, and
+records with no heterozygotes are kept.
+
 ## Reproduce
 
 ```bash

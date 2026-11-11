@@ -29,6 +29,11 @@ qc:
   maf: 0.01
   hwe_p: 1.0e-6
   hwe_mode: midp
+  # plink2 --hwe ... keep-fewhet (review item D, D-029): filter only EXCESS
+  # heterozygosity. Pooling the seven AFR populations (two of them admixed)
+  # lowers heterozygosity at ancestry-differentiated variants (Wahlund effect);
+  # those are kept. Genotyping errors mostly show up as excess heterozygosity.
+  hwe_keep_fewhet: true
   # scripts/01_subset_afr.sh fails unless the AFR sample count after removing
   # the 1000 Genomes related-sample list lies in this range
   expected_afr_samples: {min: 640, max: 665}

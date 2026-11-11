@@ -21,6 +21,7 @@ def test_qc_thresholds_from_the_brief():
     assert qc["maf"] == 0.01
     assert qc["hwe_p"] == 1e-6
     assert qc["hwe_mode"] == "midp"
+    assert qc["hwe_keep_fewhet"] is True  # review item D (user, D-029)
     assert qc["expected_afr_samples"] == {"min": 640, "max": 665}
 
 

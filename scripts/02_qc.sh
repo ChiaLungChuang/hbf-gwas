@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 02: sample and variant QC, one filter at a time, in this order:
-#   --geno, --mind, --maf, --hwe (midp), thresholds from config/analysis.yaml (qc).
+#   --geno, --mind, --maf, --hwe (midp keep-fewhet), thresholds from config/analysis.yaml (qc).
 # Each filter is computed on the output of the previous one and its counts in
 # and out are written to RUN_DIR/qc_filters.tsv. 1000 Genomes phase 3 is fully
 # called (no missing genotype calls), so --geno and --mind are expected to
@@ -27,6 +27,8 @@ mind=$(cfg qc.mind)
 maf=$(cfg qc.maf)
 hwe=$(cfg qc.hwe_p)
 hwe_mode=$(cfg qc.hwe_mode)
+hwe_args=("$hwe" "$hwe_mode")
+if [ "$(cfg qc.hwe_keep_fewhet)" = "true" ]; then hwe_args+=(keep-fewhet); fi
 q="$DATA_DIR/qc"
 table="$RUN_DIR/qc_filters.tsv"
 printf 'step\tfilter\tsamples_in\tsamples_out\tsamples_removed\tvariants_in\tvariants_out\tvariants_removed\n' >"$table"
@@ -61,11 +63,12 @@ save_log "$q.3_maf"
 v3=$(count_records "$q.3_maf.snplist")
 row 3 "--maf $maf" "$s2" "$s2" "$v1" "$v3"
 
-plink --pfile "$in" --keep "$q.2_mind.id" --extract "$q.3_maf.snplist" --hwe "$hwe" "$hwe_mode" \
+# keep-fewhet: only excess heterozygosity is filtered (Wahlund effect in pooled AFR)
+plink --pfile "$in" --keep "$q.2_mind.id" --extract "$q.3_maf.snplist" --hwe "${hwe_args[@]}" \
 	--write-snplist --out "$q.4_hwe"
 save_log "$q.4_hwe"
 v4=$(count_records "$q.4_hwe.snplist")
-row 4 "--hwe $hwe $hwe_mode" "$s2" "$s2" "$v3" "$v4"
+row 4 "--hwe ${hwe_args[*]}" "$s2" "$s2" "$v3" "$v4"
 
 plink --pfile "$in" --keep "$q.2_mind.id" --extract "$q.4_hwe.snplist" --make-pgen --out "$DATA_DIR/afr_qc"
 save_log "$DATA_DIR/afr_qc"
