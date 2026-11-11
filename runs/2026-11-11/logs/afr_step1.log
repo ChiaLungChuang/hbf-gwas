@@ -1,0 +1,35 @@
+PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)
+Options in effect:
+  --autosome
+  --keep /Users/cchuang/projects/hbf-gwas/data/1kg/afr_keep.txt
+  --make-pgen
+  --max-alleles 2
+  --out /Users/cchuang/projects/hbf-gwas/data/1kg/afr_step1
+  --pfile /Users/cchuang/projects/hbf-gwas/data/1kg/all_phase3 vzs
+  --remove /Users/cchuang/projects/hbf-gwas/data/1kg/deg2_phase3.king.cutoff.out.id
+  --set-missing-var-ids @:#:$r:$a
+  --snps-only just-acgt
+
+Hostname: EU-L240321
+Working directory: /Users/cchuang/projects/hbf-gwas
+Start time: Wed Nov 11 11:42:08 2026
+
+Random number seed: 1794418928
+16384 MiB RAM detected; reserving 8192 MiB for main workspace.
+Using up to 8 compute threads.
+2504 samples (1270 females, 1233 males, 1 ambiguous; 2497 founders) loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/all_phase3.psam.
+84805772 variants in
+/Users/cchuang/projects/hbf-gwas/data/1kg/all_phase3.pvar.zst; 6987427 excluded
+by --autosome + --max-alleles + --snps-only, 77818345 remaining.
+2 categorical phenotypes loaded.
+--keep: 661 samples remaining.
+--remove: 652 samples remaining.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) remaining after
+main filters.
+77818345 variants remaining after main filters.
+Writing /Users/cchuang/projects/hbf-gwas/data/1kg/afr_step1.psam ... done.
+Writing /Users/cchuang/projects/hbf-gwas/data/1kg/afr_step1.pvar ... done.
+Writing /Users/cchuang/projects/hbf-gwas/data/1kg/afr_step1.pgen ... done.
+
+End time: Wed Nov 11 11:43:02 2026

@@ -1,0 +1,7 @@
+[17:42:05] plink2: PLINK v2.0.0-b.1.4 M1 (7 Nov 2026) (pinned v2.0.0-b.1.4, 7 Nov 2026)
+[17:42:08] AFR samples: 661 of 2504; 9 of them are on the related-sample list
+[17:48:30] duplicates: 162 records at shared positions; 191 IDs used more than once
+[17:50:00] AFR subset: 652 samples (expected 640-665), 77817955 variants; counts in /Users/cchuang/projects/hbf-gwas/runs/2026-11-11/01_subset_counts.tsv
+real 477.74
+user 469.60
+sys 89.88

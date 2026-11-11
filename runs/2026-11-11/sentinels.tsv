@@ -1,0 +1,4 @@
+gene	rsid	table_chromosome	table_position	effect_allele	other_allele	found_by	id	chrom	pos	ref	alt	position_matches_table	alleles_match_table	alt_freq	obs_ct	effect_allele_freq	passed_geno	passed_maf	passed_hwe	survived_qc	removed_by	status
+BCL11A	rs1427407	2	60718043	T	G	rsid	rs1427407	2	60718043.0	T	G	True	True	0.761137	1302.0	0.23886300000000005	True	True	True	True		testable
+HBS1L-MYB	rs9399137	6	135419018	C	T	rsid	rs9399137	6	135419018.0	T	C	True	True	0.0391705	1302.0	0.0391705	True	True	True	True		testable
+HBB cluster	rs7482144	11	5276169	A	G	not found											False	False	False	False	not in data	not testable in this callset

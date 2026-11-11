@@ -1,0 +1,5 @@
+step	samples	variants	note
+input	652	14698808	after QC
+outside_long_range_ld_and_maf	652	8078843	--exclude bed1 regions; --maf 0.05
+ld_pruned	652	215522	--indep-pairwise 1000kb 1 0.1
+king_unrelated	652	215522	--king-cutoff 0.0884 removed 0 samples

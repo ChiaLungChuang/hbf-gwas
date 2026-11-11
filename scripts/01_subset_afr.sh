@@ -55,7 +55,8 @@ plink --pfile "$in" vzs \
 	--set-missing-var-ids '@:#:$r:$a' \
 	--make-pgen --out "$DATA_DIR/afr_step1"
 save_log "$DATA_DIR/afr_step1"
-v_loaded=$(grep -Eo '[0-9]+ variants loaded' "$DATA_DIR/afr_step1.log" | head -n 1 | awk '{print $1}' || true)
+# plink2 logs "<n> variants in" (path on the next line); older builds said "variants loaded"
+v_loaded=$(grep -Eo '^[0-9]+ variants (in|loaded)' "$DATA_DIR/afr_step1.log" | head -n 1 | awk '{print $1}' || true)
 printf 'loaded\tNA\t%s\tvariants in the input .pvar (from the plink2 log)\n' "${v_loaded:-NA}" >>"$counts"
 printf 'afr_unrelated_autosomal_biallelic_acgt_snps\t%s\t%s\tminus related list; --autosome --snps-only just-acgt --max-alleles 2\n' \
 	"$(count_records "$DATA_DIR/afr_step1.psam")" "$(count_records "$DATA_DIR/afr_step1.pvar")" >>"$counts"

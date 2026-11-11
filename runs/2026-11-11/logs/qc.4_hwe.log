@@ -1,0 +1,33 @@
+PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)
+Options in effect:
+  --extract /Users/cchuang/projects/hbf-gwas/data/1kg/qc.3_maf.snplist
+  --hwe 1e-06 midp keep-fewhet
+  --keep /Users/cchuang/projects/hbf-gwas/data/1kg/qc.2_mind.id
+  --out /Users/cchuang/projects/hbf-gwas/data/1kg/qc.4_hwe
+  --pfile /Users/cchuang/projects/hbf-gwas/data/1kg/afr
+  --write-snplist
+
+Hostname: EU-L240321
+Working directory: /Users/cchuang/projects/hbf-gwas
+Start time: Wed Nov 11 11:53:02 2026
+
+Random number seed: 1794419582
+16384 MiB RAM detected; reserving 8192 MiB for main workspace.
+Using up to 8 compute threads.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr.psam.
+77817955 variants loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr.pvar.
+2 categorical phenotypes loaded.
+--extract: 14739729 variants remaining.
+--keep: 652 samples remaining.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) remaining after
+main filters.
+Calculating allele frequencies... done.
+--hwe midp keep-fewhet: 40921 variants removed due to Hardy-Weinberg exact test
+(founders only).
+14698808 variants remaining after main filters.
+--write-snplist: Variant IDs written to
+/Users/cchuang/projects/hbf-gwas/data/1kg/qc.4_hwe.snplist .
+
+End time: Wed Nov 11 11:53:13 2026

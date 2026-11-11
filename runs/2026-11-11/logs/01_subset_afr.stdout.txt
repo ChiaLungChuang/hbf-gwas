@@ -1,0 +1,55 @@
+PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)                  cog-genomics.org/plink/2.0/
+(C) 2005-2026 S Purcell, C Chang, B Demaille      GNU General Public License v3
+Logging to /Users/cchuang/projects/hbf-gwas/data/1kg/afr_step1.log.
+Options in effect:
+  --autosome
+  --keep /Users/cchuang/projects/hbf-gwas/data/1kg/afr_keep.txt
+  --make-pgen
+  --max-alleles 2
+  --out /Users/cchuang/projects/hbf-gwas/data/1kg/afr_step1
+  --pfile /Users/cchuang/projects/hbf-gwas/data/1kg/all_phase3 vzs
+  --remove /Users/cchuang/projects/hbf-gwas/data/1kg/deg2_phase3.king.cutoff.out.id
+  --set-missing-var-ids @:#:$r:$a
+  --snps-only just-acgt
+
+Start time: Wed Nov 11 11:42:08 2026
+16384 MiB RAM detected; reserving 8192 MiB for main workspace.
+Using up to 8 compute threads.
+2504 samples (1270 females, 1233 males, 1 ambiguous; 2497 founders) loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/all_phase3.psam.
+84805772 variants in
+/Users/cchuang/projects/hbf-gwas/data/1kg/all_phase3.pvar.zst; 6987427 excluded
+by --autosome + --max-alleles + --snps-only, 77818345 remaining.
+2 categorical phenotypes loaded.
+--keep: 661 samples remaining.
+--remove: 652 samples remaining.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) remaining after
+main filters.
+77818345 variants remaining after main filters.
+Writing /Users/cchuang/projects/hbf-gwas/data/1kg/afr_step1.psam ... done.
+Writing /Users/cchuang/projects/hbf-gwas/data/1kg/afr_step1.pvar ... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+Writing /Users/cchuang/projects/hbf-gwas/data/1kg/afr_step1.pgen ... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+End time: Wed Nov 11 11:43:02 2026
+PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)                  cog-genomics.org/plink/2.0/
+(C) 2005-2026 S Purcell, C Chang, B Demaille      GNU General Public License v3
+Logging to /Users/cchuang/projects/hbf-gwas/data/1kg/afr.log.
+Options in effect:
+  --exclude /Users/cchuang/projects/hbf-gwas/data/1kg/dup_exclude.txt
+  --make-pgen
+  --out /Users/cchuang/projects/hbf-gwas/data/1kg/afr
+  --pfile /Users/cchuang/projects/hbf-gwas/data/1kg/afr_step1
+
+Start time: Wed Nov 11 11:48:30 2026
+16384 MiB RAM detected; reserving 8192 MiB for main workspace.
+Using up to 8 compute threads.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr_step1.psam.
+77818345 variants loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr_step1.pvar.
+2 categorical phenotypes loaded.
+--exclude: 77817955 variants remaining.
+77817955 variants remaining after main filters.
+Writing /Users/cchuang/projects/hbf-gwas/data/1kg/afr.psam ... done.
+Writing /Users/cchuang/projects/hbf-gwas/data/1kg/afr.pvar ... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+Writing /Users/cchuang/projects/hbf-gwas/data/1kg/afr.pgen ... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+End time: Wed Nov 11 11:48:53 2026

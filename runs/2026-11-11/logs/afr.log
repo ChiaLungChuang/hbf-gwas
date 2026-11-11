@@ -1,0 +1,26 @@
+PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)
+Options in effect:
+  --exclude /Users/cchuang/projects/hbf-gwas/data/1kg/dup_exclude.txt
+  --make-pgen
+  --out /Users/cchuang/projects/hbf-gwas/data/1kg/afr
+  --pfile /Users/cchuang/projects/hbf-gwas/data/1kg/afr_step1
+
+Hostname: EU-L240321
+Working directory: /Users/cchuang/projects/hbf-gwas
+Start time: Wed Nov 11 11:48:30 2026
+
+Random number seed: 1794419310
+16384 MiB RAM detected; reserving 8192 MiB for main workspace.
+Using up to 8 compute threads.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr_step1.psam.
+77818345 variants loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr_step1.pvar.
+2 categorical phenotypes loaded.
+--exclude: 77817955 variants remaining.
+77817955 variants remaining after main filters.
+Writing /Users/cchuang/projects/hbf-gwas/data/1kg/afr.psam ... done.
+Writing /Users/cchuang/projects/hbf-gwas/data/1kg/afr.pvar ... done.
+Writing /Users/cchuang/projects/hbf-gwas/data/1kg/afr.pgen ... done.
+
+End time: Wed Nov 11 11:48:53 2026
