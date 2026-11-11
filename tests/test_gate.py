@@ -153,3 +153,40 @@ def test_cli_exit_codes(tmp_path):
     assert fail.returncode == 1
     assert "FAIL" in fail.stdout
     assert run(good, "real").returncode == 2
+
+
+def _with_calibration(tol=0.05):
+    cfg = copy.deepcopy(CONFIG)
+    cfg["acceptance"]["simulated"]["power_calibration"] = {
+        "max_abs_diff": tol,
+        "status": "proposed",
+    }
+    res = copy.deepcopy(GOOD)
+    for loc, emp in zip(res["loci"], (0.96, 0.44, 0.12), strict=True):
+        loc["empirical_power"] = emp
+        loc["empirical_power_ci95"] = [emp - 0.02, emp + 0.02]
+    return cfg, res
+
+
+def test_power_calibration_passes_within_tolerance():
+    cfg, res = _with_calibration()
+    checks = gate.evaluate(cfg, res, experiment="simulated")
+    assert _status(checks, "locus B power calibration") == "PASS"  # 0.44 vs 0.40
+    assert not gate.any_failed(checks)
+
+
+def test_power_calibration_fails_outside_tolerance():
+    cfg, res = _with_calibration()
+    res["loci"][1]["empirical_power"] = 0.4501  # 0.0501 above 0.40
+    checks = gate.evaluate(cfg, res, experiment="simulated")
+    assert _status(checks, "locus B power calibration") == "FAIL"
+    res["loci"][1]["empirical_power"] = 0.45  # exactly at the tolerance passes
+    checks = gate.evaluate(cfg, res, experiment="simulated")
+    assert _status(checks, "locus B power calibration") == "PASS"
+
+
+def test_declared_predictions_must_be_reproduced():
+    res = copy.deepcopy(GOOD)
+    res["predictions_match_declared"] = False
+    checks = gate.evaluate(CONFIG, res, experiment="simulated")
+    assert _status(checks, "declared predictions reproduced") == "FAIL"

@@ -103,6 +103,39 @@ def evaluate(config: dict, results: dict, experiment: str = "simulated") -> list
     ]
     checks[-1].criterion = f"at alpha {t1['alpha']}: " + checks[-1].criterion
     checks += _locus_checks(config, results.get("loci", []))
+    calib = criteria.get("power_calibration")
+    if calib:
+        checks += _calibration_checks(calib, results.get("loci", []))
+    if "predictions_match_declared" in results:
+        ok = bool(results["predictions_match_declared"])
+        checks.append(
+            Check(
+                "declared predictions reproduced",
+                "PASS" if ok else "FAIL",
+                ok,
+                "predicted power recomputed by the run equals the value declared in the config",
+            )
+        )
+    return checks
+
+
+def _calibration_checks(calib: dict, loci: list[dict]) -> list[Check]:
+    tol = calib["max_abs_diff"]
+    label = f" ({calib['status']})" if calib.get("status") else ""
+    checks = []
+    for loc in loci:
+        e, p = loc["empirical_power"], loc["predicted_power"]
+        lo, hi = loc.get("empirical_power_ci95", [float("nan")] * 2)
+        ok = abs(e - p) <= tol
+        checks.append(
+            Check(
+                f"locus {loc['locus']} power calibration",
+                "PASS" if ok else "FAIL",
+                f"{e:.3f} vs {p:.3f}",
+                f"|empirical - predicted| <= {tol}{label}",
+                f"empirical 95% CI [{lo:.3f}, {hi:.3f}]; difference {e - p:+.3f}",
+            )
+        )
     return checks
 
 

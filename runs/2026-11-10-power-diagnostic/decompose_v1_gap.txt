@@ -1,0 +1,5 @@
+n = 650, df = 638, normal critical value 5.4513, t critical value 5.5176
+
+      BCL11A: (a) Phase 1 diagnostic 0.999 | (b) + t critical value 0.998 | (c) + fixed loci raise the critical value, not the spread 0.999 | recorded empirical 0.998 [0.993, 1.000]; (c) - empirical = +0.001 (-0.62 SE)
+   HBS1L-MYB: (a) Phase 1 diagnostic 0.406 | (b) + t critical value 0.380 | (c) + fixed loci raise the critical value, not the spread 0.389 | recorded empirical 0.375 [0.345, 0.406]; (c) - empirical = +0.014 (-0.91 SE)
+ HBB cluster: (a) Phase 1 diagnostic 0.461 | (b) + t critical value 0.435 | (c) + fixed loci raise the critical value, not the spread 0.436 | recorded empirical 0.419 [0.388, 0.450]; (c) - empirical = +0.017 (-1.08 SE)
