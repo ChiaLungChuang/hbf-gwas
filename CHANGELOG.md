@@ -88,3 +88,7 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   (and lists any it does remove), like the missingness filters in 02.
 - F: `scripts/03b_pc_plot.py` draws PC1 vs PC2 by the seven AFR populations at
   step c, right after the PCA; `05_report.py` no longer draws it.
+- G: `01_subset_afr.sh` reads the compressed variant file with the documented
+  `--pfile <prefix> vzs` modifier instead of naming `--pgen/--pvar/--psam`.
+  CI's plink2 pin will be changed to the build the user installs locally once
+  the version string is known.
