@@ -27,15 +27,8 @@ def small_config():
     exp["power_reps"] = 40
     exp["prediction_shift_draws"] = 50
     exp["predicted"]["conditional_power_pc_adjusted"] = {}
-    cfg["seeds"] = {
-        "sim_genotypes": 11,
-        "sim_phenotype": 12,
-        "sim_power_reps": 13,
-        "sim_power_reps_v2": 16,
-        "sim_prediction": 17,
-        "real_phenotype": 14,
-        "real_concordance_sample": 15,
-    }
+    exp["seed_key"] = "test_seed"
+    cfg["seeds"] = {"test_seed": 11, "real_phenotype": 14, "real_concordance_sample": 15}
     return cfg
 
 
@@ -114,3 +107,26 @@ def test_summary_comparison(small_results):
     other = copy.deepcopy(s)
     other["adjusted"]["lambda_gc"] += 0.01
     assert experiment.compare_summaries(s, other)
+
+
+def test_unregistered_seed_runs_nothing(small_config):
+    cfg = copy.deepcopy(small_config)
+    cfg["seeds"]["test_seed"] = None
+    with pytest.raises(experiment.NotPreregisteredError):
+        experiment.run_stratification(cfg)
+
+
+def test_seeds_are_spawned_from_one_seed(small_config, small_results):
+    seeds = experiment.experiment_seeds(small_config)
+    assert seeds["seed"] == 11
+    assert small_results["design"]["seeds"]["spawned_in_order"] == [
+        "genotypes",
+        "phenotype",
+        "power_reps",
+        "prediction",
+    ]
+    other = copy.deepcopy(small_config)
+    other["seeds"]["test_seed"] = 12
+    a = experiment.simulate_genotypes_and_pcs(small_config)["plant"].genotypes
+    b = experiment.simulate_genotypes_and_pcs(other)["plant"].genotypes
+    assert (a != b).any()

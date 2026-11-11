@@ -42,6 +42,33 @@ def _binomial_ci95(k: int, n: int) -> list[float]:
     return [lo, hi]
 
 
+class NotPreregisteredError(RuntimeError):
+    """The experiment's seed has not been pre-registered in the config yet."""
+
+
+SPAWN_ORDER = ("genotypes", "phenotype", "power_reps", "prediction")
+
+
+def experiment_seeds(config: dict) -> dict:
+    """Seeds for the current simulated experiment, spawned from ONE pre-registered seed.
+
+    ``seeds[simulated_experiment.seed_key]`` is split with numpy's
+    ``SeedSequence(seed).spawn(4)`` into genotypes, genome-wide-scan phenotype,
+    power redraws and prediction shift draws, in that order.
+    """
+    key = config["simulated_experiment"].get("seed_key")
+    if key is None:
+        raise ValueError("simulated_experiment.seed_key is not set")
+    seed = config["seeds"].get(key)
+    if seed is None:
+        raise NotPreregisteredError(
+            f"seeds.{key} is null: the {config['simulated_experiment'].get('version')} seed "
+            "has not been pre-registered yet"
+        )
+    children = np.random.SeedSequence(int(seed)).spawn(len(SPAWN_ORDER))
+    return {"seed_key": key, "seed": int(seed), **dict(zip(SPAWN_ORDER, children, strict=True))}
+
+
 def unconditional_predictions(config: dict) -> dict:
     """sim-v1 analytic predictions (noncentral chi-square, partial R2); reference only."""
     exp = config["simulated_experiment"]
@@ -60,9 +87,9 @@ def unconditional_predictions(config: dict) -> dict:
 
 
 def simulate_genotypes_and_pcs(config: dict) -> dict:
-    """The experiment's genotypes (seed sim_genotypes) and PCs; no phenotype involved."""
+    """The experiment's genotypes (spawned seed "genotypes") and PCs; no phenotype involved."""
     exp = config["simulated_experiment"]
-    rng_g = np.random.default_rng(config["seeds"]["sim_genotypes"])
+    rng_g = np.random.default_rng(experiment_seeds(config)["genotypes"])
     null = simulate.simulate_genotypes(
         exp["n_per_subpop"],
         fst=exp["fst"],
@@ -103,7 +130,7 @@ def conditional_predictions(config: dict, sim: dict | None = None) -> dict:
             pop=sim["pop"],
             shift_var_fraction=h,
             n_shift_draws=exp["prediction_shift_draws"],
-            rng=np.random.default_rng(config["seeds"]["sim_prediction"]),
+            rng=np.random.default_rng(experiment_seeds(config)["prediction"]),
         )
         out[side] = {p["locus"]: r for p, r in zip(exp["planted"], res, strict=True)}
     return out
@@ -112,7 +139,7 @@ def conditional_predictions(config: dict, sim: dict | None = None) -> dict:
 def run_stratification(config: dict) -> dict:
     t0 = time.time()
     exp = config["simulated_experiment"]
-    seeds = config["seeds"]
+    seeds = experiment_seeds(config)  # raises NotPreregisteredError before anything runs
     alpha_gw = config["association"]["genome_wide_alpha"]
     alpha_t1 = config["association"]["type1_alpha"]
     n_pcs = exp["n_pcs"]
@@ -133,7 +160,7 @@ def run_stratification(config: dict) -> dict:
     pheno = simulate.simulate_phenotype(
         plant.genotypes,
         pop,
-        rng=np.random.default_rng(seeds["sim_phenotype"]),
+        rng=np.random.default_rng(seeds["phenotype"]),
         beta=betas,
         shift_var_fraction=h,
     )
@@ -146,7 +173,7 @@ def run_stratification(config: dict) -> dict:
     reps = simulate.simulate_phenotype(
         plant.genotypes,
         pop,
-        rng=np.random.default_rng(seeds["sim_power_reps_v2"]),
+        rng=np.random.default_rng(seeds["power_reps"]),
         beta=betas,
         shift_var_fraction=h,
         n_reps=exp["power_reps"],
@@ -205,6 +232,7 @@ def run_stratification(config: dict) -> dict:
     return {
         "experiment": "simulated",
         "prereg_version": config.get("prereg", {}).get("version"),
+        "criteria_version": exp.get("version"),
         "description": "stratification on simulated genotypes; phenotype simulated",
         "design": {
             "n": int(n),
@@ -218,8 +246,9 @@ def run_stratification(config: dict) -> dict:
             "power_reps": exp["power_reps"],
             "prediction_shift_draws": exp["prediction_shift_draws"],
             "seeds": {
-                k: seeds[k]
-                for k in ("sim_genotypes", "sim_phenotype", "sim_power_reps_v2", "sim_prediction")
+                "seed_key": seeds["seed_key"],
+                "seed": seeds["seed"],
+                "spawned_in_order": list(SPAWN_ORDER),
             },
         },
         "fst_estimate": simulate.estimate_fst(null.genotypes, pop),
