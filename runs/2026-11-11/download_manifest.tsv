@@ -1,0 +1,5 @@
+file	url	downloaded_utc	bytes	sha256
+all_phase3.pgen.zst	https://www.dropbox.com/s/y6ytfoybz48dc0u/all_phase3.pgen.zst?dl=1	2026-11-11T17:40:26Z	2414715690	1feb503994db9d7e4f85bdcd2dd7bdd58fccb08b15bdaa2d6b4cf2256773f71e
+all_phase3.pvar.zst	https://www.dropbox.com/s/c95n8quqwqww4s0/all_phase3_noannot.pvar.zst?dl=1	2026-11-11T17:41:23Z	643457044	82b3462007ae44e0293500d0b71fa24c4d8cc4231139993af5bbb82037a5f8cc
+all_phase3.psam	https://www.dropbox.com/scl/fi/haqvrumpuzfutklstazwk/phase3_corrected.psam?rlkey=0yyifzj2fb863ddbmsv4jkeq6&dl=1	2026-11-11T17:41:25Z	55174	08b87282dc139204f09eef9a0d9f3508f673bb5a139fd8d8e9a595e5d5ba31af
+deg2_phase3.king.cutoff.out.id	https://www.dropbox.com/s/zj8d14vv9mp6x3c/deg2_phase3.king.cutoff.out.id?dl=1	2026-11-11T17:41:26Z	117	b11ca85baa812270c246cf5de463526089337cbb46ecec6f91e21811f63cef38

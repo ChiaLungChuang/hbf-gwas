@@ -22,11 +22,11 @@ column changes only when the pipeline has actually been run on 1000 Genomes.
 |---|---|---|
 | Simulated experiment, current criteria version **sim-v3** | **gate passed** ([run](runs/2026-11-11-sim-v3/README.md)): lambda_GC 1.342 → 0.998 with 10 PCs, type I error 0.0505; BCL11A (predicted power 0.996, required) hit at p = 3.4e-9; power calibration within 0.013 at all three loci; HBS1L-MYB (0.031) and HBB cluster (0.216) missed, reported, not gated | not yet run |
 | Simulated experiment, earlier versions (records) | sim-v1 **passed**; sim-v2 **failed** (see the history below) | n/a |
-| `00_download_1kg.sh` download + manifest | synthetic fileset, in CI | not yet run |
-| `01_subset_afr.sh` AFR subset, related samples, biallelic SNPs, duplicates | synthetic fileset, in CI | not yet run |
-| `02_qc.sh` per-filter QC table, sentinel report | synthetic fileset, in CI | not yet run |
-| `03_pca.sh` long-range LD exclusion, pruning, KING, exact PCA, het | synthetic fileset, in CI | not yet run |
-| `03b_pc_plot.py` PC1 vs PC2 by the seven AFR populations | synthetic fileset, in CI | not yet run |
+| `00_download_1kg.sh` download + manifest | synthetic fileset, in CI | **ran 2026-11-11** (step c): 4 files, manifest with sha256 ([run](runs/2026-11-11/README.md)) |
+| `01_subset_afr.sh` AFR subset, related samples, biallelic SNPs, duplicates | synthetic fileset, in CI | **ran 2026-11-11**: 652 samples, 77,817,955 variants |
+| `02_qc.sh` per-filter QC table, sentinel report | synthetic fileset, in CI | **ran 2026-11-11**: 14,698,808 variants after QC; BCL11A and HBS1L-MYB testable, HBB cluster not testable in this callset (rs7482144 absent from 1000 Genomes phase 3) |
+| `03_pca.sh` long-range LD exclusion, pruning, KING, exact PCA, het | synthetic fileset, in CI | **ran 2026-11-11**: 215,522 pruned variants, KING removed 0, 10 PCs |
+| `03b_pc_plot.py` PC1 vs PC2 by the seven AFR populations | synthetic fileset, in CI | **ran 2026-11-11** ([plot](runs/2026-11-11/pc1_pc2_by_population.png)) |
 | `03c_prereg_predictions.sh` predicted lambda_GC and conditional power, before any phenotype | synthetic fileset, in CI | not yet run |
 | `04_assoc.sh` simulated phenotype on the genotypes, plink2 `--glm` ± PCs | synthetic fileset, in CI | not yet run |
 | `05_report.py` report and Python-vs-plink2 concordance | synthetic fileset, in CI | not yet run |

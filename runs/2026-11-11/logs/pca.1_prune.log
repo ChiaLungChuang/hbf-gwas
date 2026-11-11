@@ -1,0 +1,28 @@
+PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)
+Options in effect:
+  --extract /Users/cchuang/projects/hbf-gwas/data/1kg/pca.0_candidates.snplist
+  --indep-pairwise 1000kb 1 0.1
+  --out /Users/cchuang/projects/hbf-gwas/data/1kg/pca.1_prune
+  --pfile /Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc
+
+Hostname: EU-L240321
+Working directory: /Users/cchuang/projects/hbf-gwas
+Start time: Wed Nov 11 12:10:29 2026
+
+Random number seed: 1794420629
+16384 MiB RAM detected; reserving 8192 MiB for main workspace.
+Using up to 8 compute threads.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc.psam.
+14698808 variants loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc.pvar.
+2 categorical phenotypes loaded.
+--extract: 8078843 variants remaining.
+Calculating allele frequencies... done.
+8078843 variants remaining after main filters.
+--indep-pairwise (7 compute threads): 7863321/8078843 variants removed.
+Variant lists written to
+/Users/cchuang/projects/hbf-gwas/data/1kg/pca.1_prune.prune.in and
+/Users/cchuang/projects/hbf-gwas/data/1kg/pca.1_prune.prune.out .
+
+End time: Wed Nov 11 12:10:33 2026

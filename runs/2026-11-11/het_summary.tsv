@@ -1,0 +1,2 @@
+n_samples	mean_F	sd_F	min_F	max_F	n_beyond_3sd	ids_beyond_3sd	note
+652	0.0017006514865030675	0.01461391756185352	-0.0166488	0.273948	8	HG02678,HG02759,HG02763,HG02805,HG02810,HG02837,HG03259,NA20314	reported only; no sample removed on heterozygosity

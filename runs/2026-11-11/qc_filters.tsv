@@ -1,0 +1,5 @@
+step	filter	samples_in	samples_out	samples_removed	variants_in	variants_out	variants_removed
+1	--geno 0.02	652	652	0	77817955	77817955	0
+2	--mind 0.02	652	652	0	77817955	77817955	0
+3	--maf 0.01	652	652	0	77817955	14739729	63078226
+4	--hwe 1e-06 midp keep-fewhet	652	652	0	14739729	14698808	40921

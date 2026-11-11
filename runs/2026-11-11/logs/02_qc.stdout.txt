@@ -1,0 +1,170 @@
+PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)                  cog-genomics.org/plink/2.0/
+(C) 2005-2026 S Purcell, C Chang, B Demaille      GNU General Public License v3
+Logging to /Users/cchuang/projects/hbf-gwas/data/1kg/qc.1_geno.log.
+Options in effect:
+  --geno 0.02
+  --out /Users/cchuang/projects/hbf-gwas/data/1kg/qc.1_geno
+  --pfile /Users/cchuang/projects/hbf-gwas/data/1kg/afr
+  --write-snplist
+
+Start time: Wed Nov 11 11:51:54 2026
+16384 MiB RAM detected; reserving 8192 MiB for main workspace.
+Using up to 8 compute threads.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr.psam.
+77817955 variants loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr.pvar.
+2 categorical phenotypes loaded.
+Calculating allele frequencies... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+--geno: 0 variants removed due to missing genotype data.
+77817955 variants remaining after main filters.
+--write-snplist: Variant IDs written to
+/Users/cchuang/projects/hbf-gwas/data/1kg/qc.1_geno.snplist .
+End time: Wed Nov 11 11:52:04 2026
+PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)                  cog-genomics.org/plink/2.0/
+(C) 2005-2026 S Purcell, C Chang, B Demaille      GNU General Public License v3
+Logging to /Users/cchuang/projects/hbf-gwas/data/1kg/qc.2_mind.log.
+Options in effect:
+  --extract /Users/cchuang/projects/hbf-gwas/data/1kg/qc.1_geno.snplist
+  --mind 0.02
+  --out /Users/cchuang/projects/hbf-gwas/data/1kg/qc.2_mind
+  --pfile /Users/cchuang/projects/hbf-gwas/data/1kg/afr
+  --write-samples
+
+Start time: Wed Nov 11 11:52:36 2026
+16384 MiB RAM detected; reserving 8192 MiB for main workspace.
+Using up to 8 compute threads.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr.psam.
+77817955 variants loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr.pvar.
+2 categorical phenotypes loaded.
+--extract: 77817955 variants remaining.
+Calculating sample missingness rates... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+0 samples removed due to missing genotype data (--mind).
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) remaining after
+main filters.
+--write-samples: Sample IDs written to
+/Users/cchuang/projects/hbf-gwas/data/1kg/qc.2_mind.id .
+End time: Wed Nov 11 11:52:45 2026
+PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)                  cog-genomics.org/plink/2.0/
+(C) 2005-2026 S Purcell, C Chang, B Demaille      GNU General Public License v3
+Logging to /Users/cchuang/projects/hbf-gwas/data/1kg/qc.3_maf.log.
+Options in effect:
+  --extract /Users/cchuang/projects/hbf-gwas/data/1kg/qc.1_geno.snplist
+  --keep /Users/cchuang/projects/hbf-gwas/data/1kg/qc.2_mind.id
+  --maf 0.01
+  --out /Users/cchuang/projects/hbf-gwas/data/1kg/qc.3_maf
+  --pfile /Users/cchuang/projects/hbf-gwas/data/1kg/afr
+  --write-snplist
+
+Start time: Wed Nov 11 11:52:45 2026
+16384 MiB RAM detected; reserving 8192 MiB for main workspace.
+Using up to 8 compute threads.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr.psam.
+77817955 variants loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr.pvar.
+2 categorical phenotypes loaded.
+--extract: 77817955 variants remaining.
+--keep: 652 samples remaining.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) remaining after
+main filters.
+Calculating allele frequencies... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+63078226 variants removed due to allele frequency threshold(s)
+(--maf/--max-maf/--mac/--max-mac).
+14739729 variants remaining after main filters.
+--write-snplist: Variant IDs written to
+/Users/cchuang/projects/hbf-gwas/data/1kg/qc.3_maf.snplist .
+End time: Wed Nov 11 11:52:55 2026
+PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)                  cog-genomics.org/plink/2.0/
+(C) 2005-2026 S Purcell, C Chang, B Demaille      GNU General Public License v3
+Logging to /Users/cchuang/projects/hbf-gwas/data/1kg/qc.4_hwe.log.
+Options in effect:
+  --extract /Users/cchuang/projects/hbf-gwas/data/1kg/qc.3_maf.snplist
+  --hwe 1e-06 midp keep-fewhet
+  --keep /Users/cchuang/projects/hbf-gwas/data/1kg/qc.2_mind.id
+  --out /Users/cchuang/projects/hbf-gwas/data/1kg/qc.4_hwe
+  --pfile /Users/cchuang/projects/hbf-gwas/data/1kg/afr
+  --write-snplist
+
+Start time: Wed Nov 11 11:53:02 2026
+16384 MiB RAM detected; reserving 8192 MiB for main workspace.
+Using up to 8 compute threads.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr.psam.
+77817955 variants loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr.pvar.
+2 categorical phenotypes loaded.
+--extract: 14739729 variants remaining.
+--keep: 652 samples remaining.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) remaining after
+main filters.
+Calculating allele frequencies... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+--hwe midp keep-fewhet: 40921 variants removed due to Hardy-Weinberg exact test
+(founders only).
+14698808 variants remaining after main filters.
+--write-snplist: Variant IDs written to
+/Users/cchuang/projects/hbf-gwas/data/1kg/qc.4_hwe.snplist .
+End time: Wed Nov 11 11:53:13 2026
+PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)                  cog-genomics.org/plink/2.0/
+(C) 2005-2026 S Purcell, C Chang, B Demaille      GNU General Public License v3
+Logging to /Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc.log.
+Options in effect:
+  --extract /Users/cchuang/projects/hbf-gwas/data/1kg/qc.4_hwe.snplist
+  --keep /Users/cchuang/projects/hbf-gwas/data/1kg/qc.2_mind.id
+  --make-pgen
+  --out /Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc
+  --pfile /Users/cchuang/projects/hbf-gwas/data/1kg/afr
+
+Start time: Wed Nov 11 11:53:20 2026
+16384 MiB RAM detected; reserving 8192 MiB for main workspace.
+Using up to 8 compute threads.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr.psam.
+77817955 variants loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr.pvar.
+2 categorical phenotypes loaded.
+--extract: 14698808 variants remaining.
+--keep: 652 samples remaining.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) remaining after
+main filters.
+14698808 variants remaining after main filters.
+Writing /Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc.psam ... done.
+Writing /Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc.pvar ... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+Writing /Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc.pgen ... 0%1%2%4%5%6%8%9%10%12%13%14%16%17%18%20%21%22%24%25%26%28%29%30%32%33%34%36%37%38%40%41%42%44%45%46%48%49%50%52%53%54%56%57%58%60%61%62%64%65%66%68%69%70%72%73%74%76%77%78%80%81%82%84%85%86%88%89%90%92%93%94%96%97%98%done.
+End time: Wed Nov 11 11:53:37 2026
+wrote /Users/cchuang/projects/hbf-gwas/data/1kg/loci.tsv
+BCL11A: rs1427407 -> rsid (rs1427407 2:60718043.0 T/G)
+HBS1L-MYB: rs9399137 -> rsid (rs9399137 6:135419018.0 T/C)
+HBB cluster: rs7482144 -> not found
+PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)                  cog-genomics.org/plink/2.0/
+(C) 2005-2026 S Purcell, C Chang, B Demaille      GNU General Public License v3
+Logging to /Users/cchuang/projects/hbf-gwas/data/1kg/sentinels.log.
+Options in effect:
+  --extract /Users/cchuang/projects/hbf-gwas/data/1kg/sentinel_ids.txt
+  --freq
+  --keep /Users/cchuang/projects/hbf-gwas/data/1kg/qc.2_mind.id
+  --out /Users/cchuang/projects/hbf-gwas/data/1kg/sentinels
+  --pfile /Users/cchuang/projects/hbf-gwas/data/1kg/afr
+
+Start time: Wed Nov 11 11:54:40 2026
+16384 MiB RAM detected; reserving 8192 MiB for main workspace.
+Using up to 8 compute threads.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr.psam.
+77817955 variants loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr.pvar.
+2 categorical phenotypes loaded.
+--extract: 2 variants remaining.
+--keep: 652 samples remaining.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) remaining after
+main filters.
+Calculating allele frequencies... 0%50%done.
+--freq: 0%50%--freq: Allele frequencies (founders only) written to
+/Users/cchuang/projects/hbf-gwas/data/1kg/sentinels.afreq .
+End time: Wed Nov 11 11:54:46 2026
+       gene      rsid  found_by  effect_allele_freq  removed_by                       status
+     BCL11A rs1427407      rsid            0.238863                                 testable
+  HBS1L-MYB rs9399137      rsid            0.039170                                 testable
+HBB cluster rs7482144 not found                 NaN not in data not testable in this callset

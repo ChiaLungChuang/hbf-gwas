@@ -1,0 +1,8 @@
+wrote runs/2026-11-11/pc1_pc2_by_population.png
+  ACB: 95
+  ASW: 55
+  ESN: 99
+  GWD: 113
+  LWK: 97
+  MSL: 85
+  YRI: 108

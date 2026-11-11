@@ -1,0 +1,10 @@
+[18:10:04] plink2: PLINK v2.0.0-b.1.4 M1 (7 Nov 2026) (pinned v2.0.0-b.1.4, 7 Nov 2026)
+[18:10:24] long-range LD regions: 24 (all flagged unverified in resources/long_range_ld_grch37.tsv)
+[18:10:34] NOTE: --king-cutoff 0.0884 removed 0 samples. The 1000 Genomes related-sample list
+[18:10:34]       (second degree, made with --king-cutoff 0.0884 on all 2504 samples) was
+[18:10:34]       already removed in 01_subset_afr.sh, so this step checks that no further
+[18:10:34]       relatives remain in the AFR subset; it found none.
+[18:10:42] PCA: 652 unrelated samples, 10 PCs; eigenvalues in /Users/cchuang/projects/hbf-gwas/runs/2026-11-11/pca_eigenval.txt
+real 40.06
+user 39.96
+sys 5.26

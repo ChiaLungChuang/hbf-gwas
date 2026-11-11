@@ -1,0 +1,138 @@
+PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)                  cog-genomics.org/plink/2.0/
+(C) 2005-2026 S Purcell, C Chang, B Demaille      GNU General Public License v3
+Logging to /Users/cchuang/projects/hbf-gwas/data/1kg/pca.0_candidates.log.
+Options in effect:
+  --exclude bed1 /Users/cchuang/projects/hbf-gwas/data/1kg/pca.lrld.bed1
+  --maf 0.05
+  --out /Users/cchuang/projects/hbf-gwas/data/1kg/pca.0_candidates
+  --pfile /Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc
+  --write-snplist
+
+Start time: Wed Nov 11 12:10:25 2026
+16384 MiB RAM detected; reserving 8192 MiB for main workspace.
+Using up to 8 compute threads.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc.psam.
+14698808 variants loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc.pvar.
+2 categorical phenotypes loaded.
+--exclude bed1: 566595 variants excluded.
+Calculating allele frequencies... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+6053370 variants removed due to allele frequency threshold(s)
+(--maf/--max-maf/--mac/--max-mac).
+8078843 variants remaining after main filters.
+--write-snplist: Variant IDs written to
+/Users/cchuang/projects/hbf-gwas/data/1kg/pca.0_candidates.snplist .
+End time: Wed Nov 11 12:10:26 2026
+PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)                  cog-genomics.org/plink/2.0/
+(C) 2005-2026 S Purcell, C Chang, B Demaille      GNU General Public License v3
+Logging to /Users/cchuang/projects/hbf-gwas/data/1kg/pca.1_prune.log.
+Options in effect:
+  --extract /Users/cchuang/projects/hbf-gwas/data/1kg/pca.0_candidates.snplist
+  --indep-pairwise 1000kb 1 0.1
+  --out /Users/cchuang/projects/hbf-gwas/data/1kg/pca.1_prune
+  --pfile /Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc
+
+Start time: Wed Nov 11 12:10:29 2026
+16384 MiB RAM detected; reserving 8192 MiB for main workspace.
+Using up to 8 compute threads.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc.psam.
+14698808 variants loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc.pvar.
+2 categorical phenotypes loaded.
+--extract: 8078843 variants remaining.
+Calculating allele frequencies... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+8078843 variants remaining after main filters.
+--indep-pairwise (7 compute threads): 0%5%11%16%22%28%33%39%45%50%56%61%67%73%78%84%90%95%7863321/8078843 variants removed.
+Writing...Variant lists written to
+/Users/cchuang/projects/hbf-gwas/data/1kg/pca.1_prune.prune.in and
+/Users/cchuang/projects/hbf-gwas/data/1kg/pca.1_prune.prune.out .
+End time: Wed Nov 11 12:10:33 2026
+PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)                  cog-genomics.org/plink/2.0/
+(C) 2005-2026 S Purcell, C Chang, B Demaille      GNU General Public License v3
+Logging to /Users/cchuang/projects/hbf-gwas/data/1kg/pca.2_king.log.
+Options in effect:
+  --extract /Users/cchuang/projects/hbf-gwas/data/1kg/pca.1_prune.prune.in
+  --king-cutoff 0.0884
+  --out /Users/cchuang/projects/hbf-gwas/data/1kg/pca.2_king
+  --pfile /Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc
+
+Start time: Wed Nov 11 12:10:33 2026
+16384 MiB RAM detected; reserving 8192 MiB for main workspace.
+Using up to 8 compute threads.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc.psam.
+14698808 variants loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc.pvar.
+2 categorical phenotypes loaded.
+--extract: 215522 variants remaining.
+215522 variants remaining after main filters.
+--king-cutoff pass 1/1: Scanning for rare variants... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+0 variants handled by initial scan (215522 remaining).
+--king-cutoff pass 1/1: 0 variants complete.--king-cutoff pass 1/1: 1536 variants complete.--king-cutoff pass 1/1: 3072 variants complete.--king-cutoff pass 1/1: 4608 variants complete.--king-cutoff pass 1/1: 6144 variants complete.--king-cutoff pass 1/1: 7680 variants complete.--king-cutoff pass 1/1: 9216 variants complete.--king-cutoff pass 1/1: 10752 variants complete.--king-cutoff pass 1/1: 12288 variants complete.--king-cutoff pass 1/1: 13824 variants complete.--king-cutoff pass 1/1: 15360 variants complete.--king-cutoff pass 1/1: 16896 variants complete.--king-cutoff pass 1/1: 18432 variants complete.--king-cutoff pass 1/1: 19968 variants complete.--king-cutoff pass 1/1: 21504 variants complete.--king-cutoff pass 1/1: 23040 variants complete.--king-cutoff pass 1/1: 24576 variants complete.--king-cutoff pass 1/1: 26112 variants complete.--king-cutoff pass 1/1: 27648 variants complete.--king-cutoff pass 1/1: 29184 variants complete.--king-cutoff pass 1/1: 30720 variants complete.--king-cutoff pass 1/1: 32256 variants complete.--king-cutoff pass 1/1: 33792 variants complete.--king-cutoff pass 1/1: 35328 variants complete.--king-cutoff pass 1/1: 36864 variants complete.--king-cutoff pass 1/1: 38400 variants complete.--king-cutoff pass 1/1: 39936 variants complete.--king-cutoff pass 1/1: 41472 variants complete.--king-cutoff pass 1/1: 43008 variants complete.--king-cutoff pass 1/1: 44544 variants complete.--king-cutoff pass 1/1: 46080 variants complete.--king-cutoff pass 1/1: 47616 variants complete.--king-cutoff pass 1/1: 49152 variants complete.--king-cutoff pass 1/1: 50688 variants complete.--king-cutoff pass 1/1: 52224 variants complete.--king-cutoff pass 1/1: 53760 variants complete.--king-cutoff pass 1/1: 55296 variants complete.--king-cutoff pass 1/1: 56832 variants complete.--king-cutoff pass 1/1: 58368 variants complete.--king-cutoff pass 1/1: 59904 variants complete.--king-cutoff pass 1/1: 61440 variants complete.--king-cutoff pass 1/1: 62976 variants complete.--king-cutoff pass 1/1: 64512 variants complete.--king-cutoff pass 1/1: 66048 variants complete.--king-cutoff pass 1/1: 67584 variants complete.--king-cutoff pass 1/1: 69120 variants complete.--king-cutoff pass 1/1: 70656 variants complete.--king-cutoff pass 1/1: 72192 variants complete.--king-cutoff pass 1/1: 73728 variants complete.--king-cutoff pass 1/1: 75264 variants complete.--king-cutoff pass 1/1: 76800 variants complete.--king-cutoff pass 1/1: 78336 variants complete.--king-cutoff pass 1/1: 79872 variants complete.--king-cutoff pass 1/1: 81408 variants complete.--king-cutoff pass 1/1: 82944 variants complete.--king-cutoff pass 1/1: 84480 variants complete.--king-cutoff pass 1/1: 86016 variants complete.--king-cutoff pass 1/1: 87552 variants complete.--king-cutoff pass 1/1: 89088 variants complete.--king-cutoff pass 1/1: 90624 variants complete.--king-cutoff pass 1/1: 92160 variants complete.--king-cutoff pass 1/1: 93696 variants complete.--king-cutoff pass 1/1: 95232 variants complete.--king-cutoff pass 1/1: 96768 variants complete.--king-cutoff pass 1/1: 98304 variants complete.--king-cutoff pass 1/1: 99840 variants complete.--king-cutoff pass 1/1: 101376 variants complete.--king-cutoff pass 1/1: 102912 variants complete.--king-cutoff pass 1/1: 104448 variants complete.--king-cutoff pass 1/1: 105984 variants complete.--king-cutoff pass 1/1: 107520 variants complete.--king-cutoff pass 1/1: 109056 variants complete.--king-cutoff pass 1/1: 110592 variants complete.--king-cutoff pass 1/1: 112128 variants complete.--king-cutoff pass 1/1: 113664 variants complete.--king-cutoff pass 1/1: 115200 variants complete.--king-cutoff pass 1/1: 116736 variants complete.--king-cutoff pass 1/1: 118272 variants complete.--king-cutoff pass 1/1: 119808 variants complete.--king-cutoff pass 1/1: 121344 variants complete.--king-cutoff pass 1/1: 122880 variants complete.--king-cutoff pass 1/1: 124416 variants complete.--king-cutoff pass 1/1: 125952 variants complete.--king-cutoff pass 1/1: 127488 variants complete.--king-cutoff pass 1/1: 129024 variants complete.--king-cutoff pass 1/1: 130560 variants complete.--king-cutoff pass 1/1: 132096 variants complete.--king-cutoff pass 1/1: 133632 variants complete.--king-cutoff pass 1/1: 135168 variants complete.--king-cutoff pass 1/1: 136704 variants complete.--king-cutoff pass 1/1: 138240 variants complete.--king-cutoff pass 1/1: 139776 variants complete.--king-cutoff pass 1/1: 141312 variants complete.--king-cutoff pass 1/1: 142848 variants complete.--king-cutoff pass 1/1: 144384 variants complete.--king-cutoff pass 1/1: 145920 variants complete.--king-cutoff pass 1/1: 147456 variants complete.--king-cutoff pass 1/1: 148992 variants complete.--king-cutoff pass 1/1: 150528 variants complete.--king-cutoff pass 1/1: 152064 variants complete.--king-cutoff pass 1/1: 153600 variants complete.--king-cutoff pass 1/1: 155136 variants complete.--king-cutoff pass 1/1: 156672 variants complete.--king-cutoff pass 1/1: 158208 variants complete.--king-cutoff pass 1/1: 159744 variants complete.--king-cutoff pass 1/1: 161280 variants complete.--king-cutoff pass 1/1: 162816 variants complete.--king-cutoff pass 1/1: 164352 variants complete.--king-cutoff pass 1/1: 165888 variants complete.--king-cutoff pass 1/1: 167424 variants complete.--king-cutoff pass 1/1: 168960 variants complete.--king-cutoff pass 1/1: 170496 variants complete.--king-cutoff pass 1/1: 172032 variants complete.--king-cutoff pass 1/1: 173568 variants complete.--king-cutoff pass 1/1: 175104 variants complete.--king-cutoff pass 1/1: 176640 variants complete.--king-cutoff pass 1/1: 178176 variants complete.--king-cutoff pass 1/1: 179712 variants complete.--king-cutoff pass 1/1: 181248 variants complete.--king-cutoff pass 1/1: 182784 variants complete.--king-cutoff pass 1/1: 184320 variants complete.--king-cutoff pass 1/1: 185856 variants complete.--king-cutoff pass 1/1: 187392 variants complete.--king-cutoff pass 1/1: 188928 variants complete.--king-cutoff pass 1/1: 190464 variants complete.--king-cutoff pass 1/1: 192000 variants complete.--king-cutoff pass 1/1: 193536 variants complete.--king-cutoff pass 1/1: 195072 variants complete.--king-cutoff pass 1/1: 196608 variants complete.--king-cutoff pass 1/1: 198144 variants complete.--king-cutoff pass 1/1: 199680 variants complete.--king-cutoff pass 1/1: 201216 variants complete.--king-cutoff pass 1/1: 202752 variants complete.--king-cutoff pass 1/1: 204288 variants complete.--king-cutoff pass 1/1: 205824 variants complete.--king-cutoff pass 1/1: 207360 variants complete.--king-cutoff pass 1/1: 208896 variants complete.--king-cutoff pass 1/1: 210432 variants complete.--king-cutoff pass 1/1: 211968 variants complete.--king-cutoff pass 1/1: 213504 variants complete.--king-cutoff pass 1/1: 215040 variants complete.--king-cutoff pass 1/1: Condensing...                 done.
+--king-cutoff: 215522 variants processed.
+--king-cutoff: Excluded sample IDs written to
+/Users/cchuang/projects/hbf-gwas/data/1kg/pca.2_king.king.cutoff.out.id , and
+652 remaining sample IDs written to
+/Users/cchuang/projects/hbf-gwas/data/1kg/pca.2_king.king.cutoff.in.id .
+End time: Wed Nov 11 12:10:34 2026
+PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)                  cog-genomics.org/plink/2.0/
+(C) 2005-2026 S Purcell, C Chang, B Demaille      GNU General Public License v3
+Logging to /Users/cchuang/projects/hbf-gwas/data/1kg/pca.3.log.
+Options in effect:
+  --extract /Users/cchuang/projects/hbf-gwas/data/1kg/pca.1_prune.prune.in
+  --keep /Users/cchuang/projects/hbf-gwas/data/1kg/unrelated.id
+  --out /Users/cchuang/projects/hbf-gwas/data/1kg/pca.3
+  --pca 10
+  --pfile /Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc
+
+Start time: Wed Nov 11 12:10:34 2026
+16384 MiB RAM detected; reserving 8192 MiB for main workspace.
+Using up to 8 compute threads.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc.psam.
+14698808 variants loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc.pvar.
+2 categorical phenotypes loaded.
+--extract: 215522 variants remaining.
+--keep: 652 samples remaining.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) remaining after
+main filters.
+Calculating allele frequencies... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+215522 variants remaining after main filters.
+Constructing GRM: 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+Extracting eigenvalues and eigenvectors... done.
+--pca: Eigenvectors written to
+/Users/cchuang/projects/hbf-gwas/data/1kg/pca.3.eigenvec , and eigenvalues
+written to /Users/cchuang/projects/hbf-gwas/data/1kg/pca.3.eigenval .
+End time: Wed Nov 11 12:10:36 2026
+PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)                  cog-genomics.org/plink/2.0/
+(C) 2005-2026 S Purcell, C Chang, B Demaille      GNU General Public License v3
+Logging to /Users/cchuang/projects/hbf-gwas/data/1kg/pca.4.log.
+Options in effect:
+  --extract /Users/cchuang/projects/hbf-gwas/data/1kg/pca.1_prune.prune.in
+  --het
+  --keep /Users/cchuang/projects/hbf-gwas/data/1kg/unrelated.id
+  --out /Users/cchuang/projects/hbf-gwas/data/1kg/pca.4
+  --pfile /Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc
+
+Start time: Wed Nov 11 12:10:36 2026
+16384 MiB RAM detected; reserving 8192 MiB for main workspace.
+Using up to 8 compute threads.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc.psam.
+14698808 variants loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc.pvar.
+2 categorical phenotypes loaded.
+--extract: 215522 variants remaining.
+--keep: 652 samples remaining.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) remaining after
+main filters.
+Calculating allele frequencies... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+215522 variants remaining after main filters.
+--het: 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+--het: Results written to /Users/cchuang/projects/hbf-gwas/data/1kg/pca.4.het .
+End time: Wed Nov 11 12:10:40 2026
+ n_samples   mean_F     sd_F     min_F    max_F  n_beyond_3sd                                                  ids_beyond_3sd                                               note
+       652 0.001701 0.014614 -0.016649 0.273948             8 HG02678,HG02759,HG02763,HG02805,HG02810,HG02837,HG03259,NA20314 reported only; no sample removed on heterozygosity

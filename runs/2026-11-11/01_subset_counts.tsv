@@ -1,0 +1,6 @@
+step	samples	variants	note
+all_phase3	2504	NA	all samples in the .psam
+superpop_afr	661	NA	SuperPop == AFR
+loaded	NA	NA	variants in the input .pvar (from the plink2 log)
+afr_unrelated_autosomal_biallelic_acgt_snps	652	77818345	minus related list; --autosome --snps-only just-acgt --max-alleles 2
+afr_dedup	652	77817955	removed 162 records at shared positions and all records of 191 duplicated IDs

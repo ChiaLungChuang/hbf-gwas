@@ -1,0 +1,10 @@
+[17:50:35] plink2: PLINK v2.0.0-b.1.4 M1 (7 Nov 2026) (pinned v2.0.0-b.1.4, 7 Nov 2026)
+[17:51:54] input: 652 samples, 77817955 variants
+[17:52:45] NOTE: --geno removed 0 variants and --mind removed 0 samples. This is expected:
+[17:52:45]       1000 Genomes phase 3 genotypes are fully called (no missing genotype calls),
+[17:52:45]       so the missingness filters cannot remove anything from this dataset.
+[17:53:53] after QC: 652 samples, 14698808 variants
+[18:07:53] QC table: /Users/cchuang/projects/hbf-gwas/runs/2026-11-11/qc_filters.tsv; sentinel report: /Users/cchuang/projects/hbf-gwas/runs/2026-11-11/sentinels.tsv
+real 1040.79
+user 333.67
+sys 603.88

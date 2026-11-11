@@ -1,0 +1,31 @@
+[17:36:55] plink2: PLINK v2.0.0-b.1.4 M1 (7 Nov 2026) (pinned v2.0.0-b.1.4, 7 Nov 2026)
+[17:36:55] free disk in /Users/cchuang/projects/hbf-gwas/data/1kg: 77 GB (need >= 20 GB)
+[17:36:55] downloading all_phase3.pgen.zst
+[17:40:28]   all_phase3.pgen.zst: 2414715690 bytes
+[17:40:28] downloading all_phase3.pvar.zst
+[17:41:23]   all_phase3.pvar.zst: 643457044 bytes
+[17:41:23] downloading all_phase3.psam
+[17:41:25]   all_phase3.psam: 55174 bytes
+[17:41:25] downloading deg2_phase3.king.cutoff.out.id
+[17:41:26]   deg2_phase3.king.cutoff.out.id: 117 bytes
+[17:41:26] plink2: PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)
+[17:41:26] decompressing all_phase3.pgen.zst
+[17:41:35] done: manifest at /Users/cchuang/projects/hbf-gwas/runs/2026-11-11/download_manifest.tsv
+      283.85 real        30.21 user        29.86 sys
+           129548288  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+               70585  page reclaims
+                2692  page faults
+                   0  swaps
+                   0  block input operations
+                   1  block output operations
+                 697  messages sent
+              673570  messages received
+                   0  signals received
+              274191  voluntary context switches
+              178000  involuntary context switches
+           148808012  instructions retired
+            97949559  cycles elapsed
+             1524120  peak memory footprint
