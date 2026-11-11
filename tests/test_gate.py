@@ -208,3 +208,11 @@ def test_v3_rule_only_power_at_least_099_is_required():
     assert not gate.any_failed(checks)
     res["loci"][0].update(p_adjusted=1e-7, recovered=False)
     assert gate.any_failed(gate.evaluate(cfg, res, experiment="simulated"))
+
+
+def test_not_testable_locus_is_reported_and_never_fails():
+    res = copy.deepcopy(GOOD)
+    res["not_testable"] = ["HBB cluster"]
+    checks = gate.evaluate(CONFIG, res, experiment="simulated")
+    assert _status(checks, "locus HBB cluster recovery") == "NOT TESTABLE"
+    assert not gate.any_failed(checks)

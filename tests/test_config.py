@@ -134,3 +134,10 @@ def test_planted_effect_alleles_match_the_locus_table():
     table = {loc.gene.value: loc.effect_allele.value for loc in LOCI}
     for e in CFG["planted_effects"]:
         assert e["effect_allele"] == table[e["locus"]]
+
+
+def test_sentinel_rule_has_no_proxies():
+    # review item C (user, D-028)
+    from hbfgwas.pipeline import NOT_TESTABLE
+
+    assert CFG["sentinels"] == {"not_testable_label": NOT_TESTABLE, "proxies": "none"}

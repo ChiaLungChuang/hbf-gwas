@@ -96,6 +96,24 @@ def test_sentinel_report(pvar, loci):
     assert rep.at["HBB cluster", "removed_by"] == "maf"
     assert rep.at["BCL11A", "survived_qc"]
     assert not rep.at["HBB cluster", "survived_qc"]
+    # review item C: failing QC means "not testable in this callset", no proxy
+    assert rep.at["HBB cluster", "status"] == "not testable in this callset"
+    assert rep.at["BCL11A", "status"] == "testable"
+
+
+def test_absent_sentinel_is_not_testable(tmp_path, loci):
+    p = tmp_path / "no_hbb.pvar"
+    p.write_text(
+        "#CHROM\tPOS\tID\tREF\tALT\n2\t60718043\trs1427407\tT\tG\n"
+        "6\t135419018\trs9399137\tT\tC\n11\t5276170\trsNEAR\tC\tT\n"
+    )
+    smap = pipeline.find_sentinels(p, loci)
+    rep = pipeline.sentinel_report(smap, None, {"geno": {"rs1427407", "rs9399137", "rsNEAR"}})
+    rep = rep.set_index("gene")
+    # a variant 1 bp away is not used as a proxy
+    assert rep.at["HBB cluster", "found_by"] == "not found"
+    assert rep.at["HBB cluster", "status"] == pipeline.NOT_TESTABLE
+    assert rep.at["HBB cluster", "removed_by"] == "not in data"
 
 
 def test_sample_ids_is_reproducible_and_includes(pvar):

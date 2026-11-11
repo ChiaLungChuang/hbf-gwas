@@ -201,8 +201,12 @@ LOCI: tuple[Locus, ...] = (
             note=(
                 "NOT FOUND: Ensembl GRCh37 and GRCh38 records carry no 1000GENOMES "
                 "phase_3 frequencies for rs7482144 (gnomADe:afr A = 0.1238 on GRCh37). "
-                "Synonyms include rs41322148, so the 1000 Genomes call set may use another "
-                "ID or lack the site: look it up by position in Phase 2"
+                "That gnomAD AFR frequency is SUSPECT: far too few homozygotes for that "
+                "frequency, consistent with HBG1/HBG2 paralogy (flagged by the user, "
+                "2026-11-11). Synonyms include rs41322148, so the 1000 Genomes call set "
+                "may use another ID or lack the site: it is looked up by rsID and by "
+                "position, and if absent or failing QC HBB is 'not testable in this "
+                "callset' (no proxy)"
             ),
         ),
         effect_size=Sourced(

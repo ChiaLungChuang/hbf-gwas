@@ -26,7 +26,7 @@ class NotPreregisteredError(RuntimeError):
 @dataclass
 class Check:
     name: str
-    status: str  # PASS, FAIL, or REPORTED (shown, not gated)
+    status: str  # PASS, FAIL, REPORTED (shown, not gated) or NOT TESTABLE
     observed: object
     criterion: str
     detail: str = ""
@@ -104,6 +104,19 @@ def evaluate(config: dict, results: dict, experiment: str = "simulated") -> list
     ]
     checks[-1].criterion = f"at alpha {t1['alpha']}: " + checks[-1].criterion
     checks += _locus_checks(config, results.get("loci", []))
+    label = (config.get("sentinels") or {}).get(
+        "not_testable_label", "not testable in this callset"
+    )
+    for name in results.get("not_testable", []):
+        checks.append(
+            Check(
+                f"locus {name} recovery",
+                "NOT TESTABLE",
+                "-",
+                "sentinel absent from the callset or failed QC; no proxy",
+                label,
+            )
+        )
     calib = criteria.get("power_calibration")
     if calib:
         checks += _calibration_checks(calib, results.get("loci", []))

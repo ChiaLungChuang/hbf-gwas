@@ -74,6 +74,16 @@ seeds:
   real_phenotype: 20261201
   real_concordance_sample: 20261202
 
+# --- sentinels on real genotypes ----------------------------------------------
+# User rule (review item C, D-028), fixed before any real data: a sentinel that
+# is absent from the callset (looked up by rsID and by GRCh37 position) or that
+# fails QC is reported as "not testable in this callset". No proxy variant is
+# chosen, before or after seeing the data. This applies to every sentinel,
+# HBB cluster rs7482144 (11:5276169) included.
+sentinels:
+  not_testable_label: "not testable in this callset"
+  proxies: none
+
 # --- planted effects --------------------------------------------------------
 # Per-allele effect of the HbF-increasing allele, in SD units of the simulated
 # phenotype (total variance 1). Taken from src/hbfgwas/loci.py, where every
@@ -127,7 +137,7 @@ simulated_experiment:
     - locus: HBB cluster
       beta_sd: 0.407
       ancestral_freq: 0.1238
-      ancestral_freq_source: "gnomAD exomes AFR, A allele, via Ensembl GRCh37 (no 1000 Genomes phase 3 value exists)"
+      ancestral_freq_source: "gnomAD exomes AFR, A allele, via Ensembl GRCh37 (no 1000 Genomes phase 3 value exists). SUSPECT: far too few homozygotes for that frequency, consistent with HBG1/HBG2 paralogy (flagged by the user, 2026-11-11)"
       r2: 0.035937
   predicted:
     # hbfgwas.simulate.expected_null_chi2 (declared in sim-v1); informational

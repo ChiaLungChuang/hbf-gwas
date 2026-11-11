@@ -27,6 +27,10 @@ import pandas as pd
 from hbfgwas import assoc, power, simulate
 from hbfgwas.config import load_config
 
+# Review item C (D-028): no proxies; a sentinel absent from the callset or failing QC is
+# reported with this label (also in config/analysis.yaml, sentinels.not_testable_label).
+NOT_TESTABLE = "not testable in this callset"
+
 # --- config ----------------------------------------------------------------
 
 
@@ -220,6 +224,7 @@ def sentinel_report(
         removed_by.append(first or "")
     out["survived_qc"] = [rb == "" for rb in removed_by]
     out["removed_by"] = removed_by
+    out["status"] = ["testable" if ok else NOT_TESTABLE for ok in out["survived_qc"]]
     return out
 
 
@@ -440,9 +445,10 @@ def build_report(config: dict, data_dir: Path, run_dir: Path, figures: bool = Tr
         gene = r["gene"]
         entry = {"locus": gene, "rsid": r["rsid"], "id": r["id"], "found_by": r["found_by"]}
         if pd.isna(r["id"]) or gene not in planted_meta:
-            entry["status"] = "not planted: sentinel absent after QC"
+            entry["status"] = NOT_TESTABLE  # absent from the callset or failed QC; no proxy
             loci.append(entry)
             continue
+        entry["status"] = "testable"
         pm = planted_meta[gene]
         p_eff = pm["effect_allele_freq"]
         if gene in declared_power:
@@ -473,6 +479,7 @@ def build_report(config: dict, data_dir: Path, run_dir: Path, figures: bool = Tr
         loci.append(entry)
     results["loci_all"] = loci
     results["loci"] = [x for x in loci if "p_adjusted" in x]
+    results["not_testable"] = [x["locus"] for x in loci if x["status"] == NOT_TESTABLE]
 
     # Python reference vs plink2 on the concordance subset.
     raw = read_raw(data_dir / "concord.raw")
@@ -602,7 +609,7 @@ def main(argv: list[str] | None = None) -> int:
             steps[name] = read_ids(path)
         rep = sentinel_report(smap, afreq, steps)
         rep.to_csv(a.out, sep="\t", index=False)
-        cols = ["gene", "rsid", "found_by", "effect_allele_freq", "survived_qc", "removed_by"]
+        cols = ["gene", "rsid", "found_by", "effect_allele_freq", "removed_by", "status"]
         print(rep[cols].to_string(index=False))
     elif a.cmd == "sample-ids":
         include = read_ids(a.include) if a.include else set()
