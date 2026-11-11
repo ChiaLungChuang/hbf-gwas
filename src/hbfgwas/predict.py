@@ -143,3 +143,130 @@ def conditional_power(
             }
         )
     return out
+
+
+# --- predicted lambda_GC (review item H) --------------------------------------------
+
+MEDIAN_CHI2_1DF = float(stats.chi2.ppf(0.5, 1))
+
+
+def mixture_median_chi2(delta2) -> float:
+    """Median of an equal-weight mixture of noncentral chi-square(1, delta2_j).
+
+    Uses chi2_1(d) = (Z + sqrt(d))^2, so CDF(x) = Phi(sqrt(x) - sqrt(d)) - Phi(-sqrt(x) - sqrt(d)).
+    """
+    d = np.sqrt(np.maximum(np.asarray(delta2, dtype=float), 0.0))
+
+    def cdf(x):
+        r = np.sqrt(x)
+        return float(np.mean(stats.norm.cdf(r - d) - stats.norm.cdf(-r - d)))
+
+    lo, hi = 0.0, max(1.0, float(np.max(d)) + 10.0) ** 2
+    for _ in range(100):
+        mid = 0.5 * (lo + hi)
+        if cdf(mid) < 0.5:
+            lo = mid
+        else:
+            hi = mid
+        if hi - lo < 1e-10 * max(1.0, hi):
+            break
+    return 0.5 * (lo + hi)
+
+
+def _residualise(x: np.ndarray, q: np.ndarray) -> np.ndarray:
+    return x - q @ (q.T @ x)
+
+
+def _lambdas(genotypes, shifts, covariates, phenotype_var):
+    """lambda_GC for each column of ``shifts`` (effective subpopulation shifts).
+
+    For a null variant, t_j ~ N(delta_j, tau^2) with
+    delta_j = sqrt(n) cov(g_r, s_r) / (sd(g_r) sd(y_r)) computed from the
+    REALISED genotypes (so it already contains the within-subpopulation
+    sampling deviations of the genotype means), and tau^2 = (phenotype_var -
+    Var(s)) / Var(y_r): only the non-shift part of the phenotype is noise.
+    Hence t_j^2 / tau^2 ~ chi2_1(delta_j^2 / tau^2), and lambda is the median
+    of that mixture times tau^2, over 0.4549.
+    """
+    g = np.asarray(genotypes, dtype=float)
+    n = g.shape[0]
+    keep = g.var(axis=0) > 0
+    g = g[:, keep]
+    q = _covariate_basis(n, covariates)
+    g_r = _residualise(g, q)
+    sd_g = np.sqrt(np.sum(g_r**2, axis=0) / n)
+    s = shifts - shifts.mean(axis=0)
+    s_r = _residualise(s, q)
+    nonshift = phenotype_var - s.var(axis=0)
+    if np.any(nonshift <= 0):
+        raise ValueError("shift variance exceeds the phenotype variance")
+    var_y_r = nonshift + s_r.var(axis=0)
+    tau2 = nonshift / var_y_r
+    cov = (g_r.T @ s_r) / n  # (M, B)
+    delta = np.sqrt(n) * cov / sd_g[:, None] / np.sqrt(var_y_r)[None, :]
+    lam = [tau2[b] * mixture_median_chi2(delta[:, b] ** 2 / tau2[b]) for b in range(delta.shape[1])]
+    return np.array(lam) / MEDIAN_CHI2_1DF
+
+
+def lambda_sampling_sd(lam: float, n_variants: int) -> float:
+    """SD of lambda_GC estimated as a median over ``n_variants`` independent statistics.
+
+    Var(sample median) ~ 1 / (4 M f(m)^2) with f the chi2_1 density at its
+    median m; relative to lambda this is 2.333 / sqrt(M). LD makes the
+    effective M smaller than the variant count.
+    """
+    m = MEDIAN_CHI2_1DF
+    f = float(stats.chi2.pdf(m, 1))
+    return float(lam * 0.5 / (np.sqrt(n_variants) * f * m))
+
+
+def predicted_lambda(
+    genotypes,
+    pop,
+    shift_var_fraction: float,
+    covariates=None,
+    n_shift_draws: int = 200,
+    rng: np.random.Generator | None = None,
+    phenotype_var: float = 1.0,
+    noise_var: float | None = None,
+) -> dict:
+    """Predicted lambda_GC from genotypes alone, before any phenotype is drawn.
+
+    ``genotypes`` (n, M) are null variants (e.g. a random subset away from the
+    planted sentinels). Each null t statistic is ~ N(delta_j, tau^2) with
+    delta_j = sqrt(n) cov(g_r, s_r) / (sd(g_r) sd(y_r)) from the realised
+    genotypes and tau^2 the non-shift share of the residual phenotype
+    variance; lambda is the median of the implied chi-square mixture over the
+    variants divided by 0.4549 (see ``_lambdas``).
+
+    Two random parts act on ALL null variants at once and are drawn
+    ``n_shift_draws`` times: the subpopulation shift (the simulation's own law),
+    and the subpopulation means of the noise, N(0, noise_var / n_k), which act
+    like a second, small shift. Their spread is why the summary is a median
+    with 5th / 95th percentiles rather than one number.
+    """
+    rng = rng if rng is not None else np.random.default_rng(0)
+    pop = np.asarray(pop)
+    if noise_var is None:
+        noise_var = phenotype_var - shift_var_fraction
+    shifts = shift_vectors(pop, shift_var_fraction, n_shift_draws, rng)
+    labels, idx = np.unique(pop, return_inverse=True)
+    nk = np.bincount(idx).astype(float)
+    noise_means = rng.standard_normal((n_shift_draws, labels.size)) * np.sqrt(noise_var / nk)
+    effective = shifts + noise_means[:, idx].T
+    lam = _lambdas(genotypes, effective, covariates, phenotype_var)
+    n_var = int(np.sum(np.asarray(genotypes, dtype=float).var(axis=0) > 0))
+    med = float(np.median(lam))
+    return {
+        "median": med,
+        "q05": float(np.quantile(lam, 0.05)),
+        "q95": float(np.quantile(lam, 0.95)),
+        "mean": float(lam.mean()),
+        "n_variants": n_var,
+        "n_shift_draws": int(n_shift_draws),
+        "note": (
+            "q05-q95 reflect the random shift and noise means only; estimating lambda_GC "
+            "as a median over M independent variants adds an SD of about "
+            "2.333 * lambda / sqrt(M) (lambda_sampling_sd)"
+        ),
+    }

@@ -78,6 +78,7 @@ seeds:
   sim_v3: 20261111 # pre-registered 2026-11-11, after the sim-v3 criteria (#17) reached main (#18)
   real_phenotype: 20261201
   real_concordance_sample: 20261202
+  real_prediction: 20261203 # Phase 2 step d predictions (shift draws, null variant sample)
 
 # --- sentinels on real genotypes ----------------------------------------------
 # User rule (review item C, D-028), fixed before any real data: a sentinel that
@@ -163,6 +164,16 @@ simulated_experiment:
       BCL11A: 0.9958 # >= 0.99: REQUIRED in the single scan
       HBS1L-MYB: 0.0311
       HBB cluster: 0.2160
+
+# --- Phase 2 step d predictions (scripts/03c_prereg_predictions.sh) -------------
+# Computed from the real genotypes and PCs before any phenotype is drawn:
+# conditional power per testable sentinel and the predicted lambda_GC
+# (review item H). Null variants are drawn more than
+# association.null_exclusion_window_bp away from every sentinel.
+prediction:
+  n_null_variants: 20000
+  power_shift_draws: 2000
+  lambda_shift_draws: 200
 
 # --- real-genotype phenotype simulation (scripts/04_assoc.sh) ------------------
 # Provisional: confirmed or revised in the Phase 2 step d pre-registration

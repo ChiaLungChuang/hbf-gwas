@@ -135,29 +135,76 @@ def test_mixture_median_matches_simulation():
 
 
 @pytest.mark.parametrize("adjusted", [False, True])
-def test_lambda_for_a_given_shift_matches_the_observed_lambda(lam_scenario, adjusted):
-    """Same shift draw, fresh noise: predicted lambda tracks the observed one."""
+def test_predicted_lambda_matches_observed_lambda_over_phenotype_draws(lam_scenario, adjusted):
+    """Prediction (genotypes only) vs lambda_GC observed on 40 simulated phenotypes."""
     s = lam_scenario
     cov = s["pcs"] if adjusted else None
-    rng = np.random.default_rng(10)
-    errs = []
-    for _ in range(8):
-        shift = predict.shift_vectors(s["pop"], s["h"], 1, rng)[:, 0]
-        y = shift + rng.standard_normal(shift.size) * np.sqrt(1 - s["h"])
-        observed = assoc.lambda_gc(assoc.linear_assoc(s["g"], y, cov).p)
-        predicted = predict.lambda_for_shift(s["g"], shift, covariates=cov)
-        errs.append(observed - predicted)
-    assert abs(np.mean(errs)) < 0.04, errs
-    if not adjusted:
-        assert predicted > 1.5  # strong structure: clearly inflated
+    pred = predict.predicted_lambda(
+        s["g"], s["pop"], s["h"], covariates=cov, n_shift_draws=400, rng=np.random.default_rng(12)
+    )
+    ph = sim.simulate_phenotype(
+        s["g"][:, :1],
+        s["pop"],
+        rng=np.random.default_rng(13),
+        r2=[0.0],
+        shift_var_fraction=s["h"],
+        n_reps=40,
+    )
+    res = assoc.linear_assoc(s["g"], ph.y, cov)
+    observed = np.array([assoc.lambda_gc(res.p[:, r]) for r in range(40)])
+    se = observed.std(ddof=1) / np.sqrt(40)
+    assert abs(observed.mean() - pred["mean"]) < 3 * se + 0.01, (observed.mean(), pred)
+    # the interval plus the sampling error of a median over 2000 variants
+    samp = predict.lambda_sampling_sd(pred["median"], pred["n_variants"])
+    lo, hi = pred["q05"] - 1.645 * samp, pred["q95"] + 1.645 * samp
+    inside = np.mean((observed >= lo) & (observed <= hi))
+    assert inside >= 0.75, (inside, lo, hi, observed.min(), observed.max())
+
+
+def test_predicted_lambda_weak_structure_matches_observed():
+    """Weak structure (the experiment's own design: 7 x 93, Fst 0.01, h 0.2).
+
+    Sensitive to double counting the within-subpopulation sampling part of
+    the genotype means, which shifts lambda by about h.
+    """
+    rng = np.random.default_rng(909)
+    g = sim.simulate_genotypes([93] * 7, fst=0.01, rng=rng, n_variants=6000)
+    null = g.genotypes[:, :4000].astype(float)
+    pred = predict.predicted_lambda(
+        null, g.pop, 0.2, n_shift_draws=300, rng=np.random.default_rng(910)
+    )
+    ph = sim.simulate_phenotype(
+        null[:, :1],
+        g.pop,
+        rng=np.random.default_rng(911),
+        r2=[0.0],
+        shift_var_fraction=0.2,
+        n_reps=40,
+    )
+    res = assoc.linear_assoc(null, ph.y)
+    observed = np.array([assoc.lambda_gc(res.p[:, r]) for r in range(40)])
+    se = observed.std(ddof=1) / np.sqrt(40)
+    assert abs(observed.mean() - pred["mean"]) < 3 * se + 0.01, (observed.mean(), pred["mean"], se)
+
+
+def test_lambda_sampling_sd():
+    # 100,000 independent null variants: SD ~ 0.0074 (the sim-v1 design note)
+    assert predict.lambda_sampling_sd(1.0, 100_000) == pytest.approx(0.00738, abs=2e-4)
 
 
 def test_predicted_lambda_summary(lam_scenario):
     s = lam_scenario
-    out = predict.predicted_lambda(s["g"], s["pop"], s["h"], n_shift_draws=50,
-                                   rng=np.random.default_rng(11))
-    adj = predict.predicted_lambda(s["g"], s["pop"], s["h"], covariates=s["pcs"],
-                                   n_shift_draws=50, rng=np.random.default_rng(11))
+    out = predict.predicted_lambda(
+        s["g"], s["pop"], s["h"], n_shift_draws=50, rng=np.random.default_rng(11)
+    )
+    adj = predict.predicted_lambda(
+        s["g"],
+        s["pop"],
+        s["h"],
+        covariates=s["pcs"],
+        n_shift_draws=50,
+        rng=np.random.default_rng(11),
+    )
     assert out["q05"] <= out["median"] <= out["q95"]
     assert out["median"] > 1.5
     assert adj["median"] == pytest.approx(1.0, abs=0.06)
