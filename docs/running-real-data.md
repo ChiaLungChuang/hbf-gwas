@@ -77,6 +77,13 @@ step c).
 
 ## 3. Pre-register the real-data criteria (Phase 2 step d)
 
+The real-data criteria follow the **sim-v3 rule** (docs/decisions.md D-024):
+gated power calibration (|empirical - predicted| <= 0.05 per locus over 2000
+phenotype redraws on the real genotypes), gated single-scan recovery only for
+loci with conditional predicted power >= 0.99, and every other locus's
+single-scan result reported next to its predicted power. The predictions are
+computed from the real genotypes and PCs before any phenotype is drawn.
+
 With the real n and the real sentinel frequencies from `sentinels.tsv`,
 compute analytic power per locus (`hbfgwas.power.power(n, 5e-8, beta=...,
 maf=..., covariate_r2=...)`). Write the real-data acceptance criteria into
