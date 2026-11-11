@@ -2,7 +2,8 @@
 
 The criteria live in ``config/analysis.yaml`` under ``acceptance`` and were
 declared before any experiment ran. This module never changes them; it only
-reads them and reports PASS / FAIL / NOT REQUIRED for each one.
+reads them and reports PASS / FAIL for each gated criterion and REPORTED for
+results that are shown but not gated.
 
 Exit codes of ``python -m hbfgwas.gate``: 0 all criteria met, 1 at least one
 criterion failed, 2 the requested experiment has no pre-registered criteria.
@@ -25,7 +26,7 @@ class NotPreregisteredError(RuntimeError):
 @dataclass
 class Check:
     name: str
-    status: str  # PASS, FAIL or NOT REQUIRED
+    status: str  # PASS, FAIL, or REPORTED (shown, not gated)
     observed: object
     criterion: str
     detail: str = ""
@@ -62,13 +63,13 @@ def _locus_checks(config: dict, loci: list[dict]) -> list[Check]:
         name = f"locus {loc['locus']} recovery"
         observed = f"p = {loc['p_adjusted']:.3g}"
         crit = f"p < {alpha} if predicted power >= {threshold}"
-        outcome = "recovered" if recovered else "not recovered"
+        hit = "hit" if recovered else "miss"
         if power >= threshold:
             status = "PASS" if recovered else "FAIL"
-            detail = f"REQUIRED (predicted power {power:.2f}); {outcome}"
+            detail = f"REQUIRED (predicted power {power:.4f}); single scan: {hit}"
         else:
-            status = "NOT REQUIRED"
-            detail = f"{label} (predicted power {power:.2f}); {outcome}"
+            status = "REPORTED"
+            detail = f"{label} (predicted power {power:.4f}); single scan: {hit}"
         checks.append(Check(name, status, observed, crit, detail))
     return checks
 

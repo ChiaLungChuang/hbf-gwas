@@ -1,0 +1,12 @@
+sample allele frequencies (v1 record, v2 record, recomputed):
+  [0.2462, 0.0623, 0.1254] [0.2462, 0.0623, 0.1254] [np.float64(0.2462), np.float64(0.0623), np.float64(0.1254)]
+HBS1L-MYB genotype variance in the sample 0.11832; 2p(1-p) at the ancestral frequency 0.041604: 0.07975
+HBS1L-MYB beta v1 0.4688 (r2 0.02600); v2 0.5710 (r2 0.03858)
+phenotype variance v1 {'genetic': 0.14598950315927503, 'shift': 0.2000000000000001, 'noise': 0.6335508485640324, 'total': 0.9812662621918155} v2 {'genetic': 0.16343157150191714, 'shift': 0.2000000000000001, 'noise': 0.6166544267901112, 'total': 0.9795363327653772}
+
+v1 declared (unconditional chi-square, r2 0.026, partial R2): 0.2181
+v1 betas, corrected conditional         : power 0.3890; E[beta_hat] 0.5297 = beta 0.4688 + leakage +0.0610; noncentrality 5.671 vs effective critical 5.959; noise 0.6540
+v1 betas, HBS1L-MYB beta = 0.571 only   : power 0.8055; E[beta_hat] 0.6320 = beta 0.5710 + leakage +0.0610; noncentrality 6.840 vs effective critical 5.969; noise 0.6398
+v2 betas (all beta_sd)                  : power 0.8090; E[beta_hat] 0.6329 = beta 0.5710 + leakage +0.0619; noncentrality 6.867 vs effective critical 5.983; noise 0.6366
+
+v2 provenance: commit df3b117, run_utc 2026-11-10T21:46:07Z

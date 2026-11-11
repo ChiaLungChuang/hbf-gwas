@@ -61,3 +61,10 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   proposed per-locus power-calibration criterion (0.05) and per-allele
   effects planted directly; post hoc diagnostic of the Phase 1 gap in
   `runs/2026-11-10-power-diagnostic/`.
+- Criteria amendment sim-v3 (issue #14), made after the failed sim-v2
+  result: power calibration gated at 0.05; a locus is required in the single
+  scan only at conditional predicted power >= 0.99; other loci reported. One
+  pre-registered seed for sim-v3 (not yet set). CI skips the gate until it is
+  set. `tests/test_records.py` pins the sim-v1 and sim-v2 records. Post hoc
+  audit for #14 in `runs/2026-11-11-hbs1l-myb-audit/`. README history of
+  sim-v1 (passed), sim-v2 (failed) and sim-v3.

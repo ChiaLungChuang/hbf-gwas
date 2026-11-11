@@ -10,7 +10,8 @@ sim_stratification_qq.png; copies the last two to --figures-dir.
     python scripts/run_stratification.py --out-dir /tmp/sim --figures-dir "" \
         --compare-to docs/figures/sim_stratification_summary.json   # CI check
 
-Exit codes: 0 ok; 3 the summary differs from --compare-to beyond tolerance.
+Exit codes: 0 ok; 2 the experiment's seed is not pre-registered yet (nothing
+run); 3 the summary differs from --compare-to beyond tolerance.
 The acceptance gate is separate: python -m hbfgwas.gate --results <results.json>
 """
 
@@ -41,7 +42,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     config = load_config(args.config)
-    results = experiment.run_stratification(config)
+    try:
+        results = experiment.run_stratification(config)
+    except experiment.NotPreregisteredError as exc:
+        print(f"NOT RUN: {exc}")
+        return 2
     paths = experiment.write_outputs(results, config, Path(args.out_dir), Path(args.config))
 
     s = experiment.summarize(results)
