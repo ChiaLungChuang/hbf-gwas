@@ -35,6 +35,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 need curl
 need "$PLINK2"
 setup_dirs
+check_plink_version
 
 free_kb=$(df -Pk "$DATA_DIR" | awk 'NR == 2 {print $4}')
 need_kb=$((MIN_FREE_GB * 1024 * 1024))

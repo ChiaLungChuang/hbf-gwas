@@ -152,3 +152,16 @@ def test_prediction_settings():
         "lambda_shift_draws": 200,
     }
     assert isinstance(CFG["seeds"]["real_prediction"], int)
+
+
+def test_plink2_pin_matches_ci():
+    # review item G: CI downloads exactly the Linux build recorded in the config
+    from pathlib import Path
+
+    ci = (Path(__file__).resolve().parents[1] / ".github/workflows/ci.yml").read_text()
+    pin = CFG["plink2"]
+    assert pin["version"] == "v2.0.0-b.1.4" and pin["build_date"] == "7 Nov 2026"
+    linux = pin["builds"]["linux_x86_64"]
+    assert f"PLINK2_URL: {linux['url']}" in ci
+    assert f"PLINK2_SHA256: {linux['zip_sha256']}" in ci
+    assert "20261107" in pin["builds"]["mac_arm64"]["url"]

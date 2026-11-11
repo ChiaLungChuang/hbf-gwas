@@ -58,6 +58,14 @@ def _run(script: str, env: dict) -> subprocess.CompletedProcess:
 # --- anywhere --------------------------------------------------------------------
 
 
+def _fake_plink2(tmp: Path, version: str = "PLINK v2.0.0-b.1.4 fake stub (7 Nov 2026)") -> Path:
+    """A stand-in plink2 that only answers --version (for tests that stop earlier)."""
+    p = tmp / "fake_plink2"
+    p.write_text(f"#!/bin/sh\nif [ \"$1\" = --version ]; then echo '{version}'; fi\nexit 0\n")
+    p.chmod(0o755)
+    return p
+
+
 @pytest.mark.parametrize("script", sorted(p.name for p in SCRIPTS.glob("0*.sh")))
 def test_shell_syntax(script):
     subprocess.run(["bash", "-n", str(SCRIPTS / script)], check=True)
@@ -75,7 +83,9 @@ def _serve(tmp: Path, pgen_bytes: bytes) -> dict:
 
 def test_download_rejects_a_small_file(tmp_path):
     urls = _serve(tmp_path, b"<html>gone</html>")
-    r = _run("00_download_1kg.sh", _env(tmp_path, PLINK2="true", MIN_FREE_GB=0, **urls))
+    r = _run(
+        "00_download_1kg.sh", _env(tmp_path, PLINK2=_fake_plink2(tmp_path), MIN_FREE_GB=0, **urls)
+    )
     assert r.returncode != 0
     assert "bytes" in r.stderr and "re-check the URL" in r.stderr
 
@@ -84,7 +94,7 @@ def test_download_rejects_an_html_page_even_when_large(tmp_path):
     urls = _serve(tmp_path, b"<!DOCTYPE html><html>" + b"x" * 5000)
     r = _run(
         "00_download_1kg.sh",
-        _env(tmp_path, PLINK2="true", MIN_FREE_GB=0, MIN_BYTES_LARGE=10, **urls),
+        _env(tmp_path, PLINK2=_fake_plink2(tmp_path), MIN_FREE_GB=0, MIN_BYTES_LARGE=10, **urls),
     )
     assert r.returncode != 0
     assert "HTML" in r.stderr
@@ -94,7 +104,7 @@ def test_download_rejects_a_non_zstd_file(tmp_path):
     urls = _serve(tmp_path, b"PK\x03\x04" + b"\1" * 5000)
     r = _run(
         "00_download_1kg.sh",
-        _env(tmp_path, PLINK2="true", MIN_FREE_GB=0, MIN_BYTES_LARGE=10, **urls),
+        _env(tmp_path, PLINK2=_fake_plink2(tmp_path), MIN_FREE_GB=0, MIN_BYTES_LARGE=10, **urls),
     )
     assert r.returncode != 0
     assert "zstd" in r.stderr
@@ -102,13 +112,16 @@ def test_download_rejects_a_non_zstd_file(tmp_path):
 
 def test_download_checks_free_disk(tmp_path):
     urls = _serve(tmp_path, b"\x28\xb5\x2f\xfd" + b"\0" * 5000)
-    r = _run("00_download_1kg.sh", _env(tmp_path, PLINK2="true", MIN_FREE_GB=10**9, **urls))
+    r = _run(
+        "00_download_1kg.sh",
+        _env(tmp_path, PLINK2=_fake_plink2(tmp_path), MIN_FREE_GB=10**9, **urls),
+    )
     assert r.returncode != 0
     assert "free" in r.stderr
 
 
 def test_assoc_refuses_unverified_loci(tmp_path):
-    r = _run("04_assoc.sh", _env(tmp_path, PLINK2="true"))
+    r = _run("04_assoc.sh", _env(tmp_path, PLINK2=_fake_plink2(tmp_path)))
     assert r.returncode != 0
     assert "not signed off" in r.stderr
 
@@ -118,7 +131,10 @@ def test_assoc_refuses_without_prereg_tag(tmp_path):
     subprocess.run([sys.executable, "-m", "hbfgwas.loci", "export", "--out", str(loci)], check=True)
     empty = tmp_path / "empty.git"  # a repository with no tags, whatever this checkout has
     subprocess.run(["git", "init", "-q", "--bare", str(empty)], check=True)
-    r = _run("04_assoc.sh", _env(tmp_path, PLINK2="true", HBFGWAS_LOCI_TSV=loci, GIT_DIR=empty))
+    r = _run(
+        "04_assoc.sh",
+        _env(tmp_path, PLINK2=_fake_plink2(tmp_path), HBFGWAS_LOCI_TSV=loci, GIT_DIR=empty),
+    )
     assert r.returncode != 0
     assert "prereg-v1" in r.stderr
 
@@ -331,3 +347,11 @@ def test_e2e_prereg_predictions_before_any_phenotype(e2e):
     mtime_pred = (e2e["run"] / "prereg_predictions.json").stat().st_mtime
     mtime_pheno = (e2e["data"] / "pheno.tsv").stat().st_mtime
     assert mtime_pred < mtime_pheno  # written before the phenotype existed
+
+
+def test_scripts_refuse_an_unpinned_plink2(tmp_path):
+    # review item G: config/analysis.yaml pins plink2 v2.0.0-b.1.4 (7 Nov 2026)
+    other = _fake_plink2(tmp_path, "PLINK v2.0.0-a.7.15 64-bit (7 Nov 2026)")
+    r = _run("02_qc.sh", _env(tmp_path, PLINK2=other))
+    assert r.returncode != 0
+    assert "pins v2.0.0-b.1.4 (7 Nov 2026)" in r.stderr
