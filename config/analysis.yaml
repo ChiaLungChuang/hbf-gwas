@@ -16,7 +16,7 @@
 prereg:
   version: sim-v3
   declared: "2026-11-11"
-  status: sim-v3 criteria amended after the FAILED sim-v2 result; sim-v3 seed not yet pre-registered; real-data criteria pending (Phase 2 step d, which uses the sim-v3 rule)
+  status: sim-v3 criteria amended after the FAILED sim-v2 result; sim-v3 seed pre-registered (seeds.sim_v3); predictions and run pending; real-data criteria pending (Phase 2 step d, which uses the sim-v3 rule)
   history:
     - "sim-v1: declared and run 2026-11-10 (config commit f63e8bd; runs/2026-11-10-sim-stratification): gate PASSED"
     - "sim-v2: power check redesigned after seeing the sim-v1 result (issue #10; D-020 to D-023); declared df3b117, run 2026-11-10 (runs/2026-11-10-sim-v2): gate FAILED, HBS1L-MYB REQUIRED at predicted power 0.809 and not recovered (p = 1.24e-6). Recorded as failed; not rerun."
@@ -70,7 +70,7 @@ seeds:
   # sim-v3: ONE seed; genotypes, scan, redraws and prediction draws are spawned
   # from it (numpy SeedSequence(seed).spawn(4), in that order). Pre-registered
   # after the v3 criteria amendment is merged, pushed, then run exactly once.
-  sim_v3: null
+  sim_v3: 20261111 # pre-registered 2026-11-11, after the sim-v3 criteria (#17) reached main (#18)
   real_phenotype: 20261201
   real_concordance_sample: 20261202
 
