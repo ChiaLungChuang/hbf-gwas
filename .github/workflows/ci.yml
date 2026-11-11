@@ -46,7 +46,55 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Install plink2 (official build, pinned) and zstd
+        env:
+          # https://www.cog-genomics.org/plink/2.0/ "Linux 64-bit Intel", Beta 1.4 (7 Nov 2026)
+          PLINK2_URL: https://s3.amazonaws.com/plink2-assets/beta1/plink2_linux_x86_64_20261107.zip
+          # first observed in CI on 2026-11-10 (trust on first use; see docs/decisions.md D-016)
+          PLINK2_SHA256: 16b5cf92faed7e8b8aa1010c6eab9bac17c92b57ccfa69c4d059b1b17b98eb70
+        run: |
+          command -v zstd || sudo apt-get install -y -qq zstd
+          curl -fsSL -o "$RUNNER_TEMP/plink2.zip" "$PLINK2_URL"
+          echo "$PLINK2_SHA256  $RUNNER_TEMP/plink2.zip" | sha256sum -c -
+          unzip -o -q "$RUNNER_TEMP/plink2.zip" -d "$RUNNER_TEMP/plink2"
+          echo "$RUNNER_TEMP/plink2" >> "$GITHUB_PATH"
+      - name: Tool versions
+        run: plink2 --version && zstd --version && bash --version | head -1
       - name: Install package
         run: python -m pip install -e ".[dev]"
-      - name: pytest
-        run: python -m pytest -v
+      - name: pytest (plink2 end-to-end tests required)
+        env:
+          REQUIRE_PLINK2: "1"
+        run: python -m pytest -v -rP
+
+  gate:
+    # Re-runs the pre-registered simulated experiment and applies the
+    # acceptance gate: a statistical regression breaks the build.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install package
+        run: python -m pip install -e .
+      - name: Run the pre-registered stratification experiment
+        run: python scripts/run_stratification.py --out-dir "$RUNNER_TEMP/sim" --figures-dir ""
+      - name: Acceptance gate
+        run: python -m hbfgwas.gate --results "$RUNNER_TEMP/sim/results.json"
+      - name: Reproduces the committed summary
+        run: |
+          python - <<'PY'
+          import json, os, sys
+          from hbfgwas import experiment
+          ref = json.load(open("docs/figures/sim_stratification_summary.json"))
+          new = json.load(open(os.path.join(os.environ["RUNNER_TEMP"], "sim", "sim_stratification_summary.json")))
+          diffs = experiment.compare_summaries(ref, new)
+          print("\n".join(diffs) or "summary reproduces docs/figures/sim_stratification_summary.json")
+          sys.exit(1 if diffs else 0)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sim-stratification
+          path: ${{ runner.temp }}/sim

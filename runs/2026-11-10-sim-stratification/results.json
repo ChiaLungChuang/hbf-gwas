@@ -1,0 +1,132 @@
+{
+  "experiment": "simulated",
+  "description": "stratification on simulated genotypes; phenotype simulated",
+  "design": {
+    "n": 650,
+    "n_per_subpop": [
+      93,
+      93,
+      93,
+      93,
+      93,
+      93,
+      92
+    ],
+    "n_null_variants": 100000,
+    "monomorphic_null_variants": 0,
+    "fst": 0.01,
+    "shift_var_fraction": 0.2,
+    "n_pcs": 10,
+    "power_reps": 1000,
+    "seeds": {
+      "sim_genotypes": 20261101,
+      "sim_phenotype": 20261102,
+      "sim_power_reps": 20261103
+    }
+  },
+  "fst_estimate": 0.00997124296023796,
+  "pca_eigenvalues": [
+    2.8716842346242455,
+    2.8645799729394135,
+    2.8549041475462524,
+    2.8408894088604977,
+    2.833449801073285,
+    2.8261841429475214,
+    1.1566762954901884,
+    1.15524081261595,
+    1.1535772178469872,
+    1.1502840657193318
+  ],
+  "phenotype_variance": {
+    "genetic": 0.14598950315927503,
+    "shift": 0.2000000000000001,
+    "noise": 0.6335508485640324,
+    "total": 0.9812662621918155
+  },
+  "unadjusted": {
+    "lambda_gc": 1.3805589398766014,
+    "type1_error": 0.09665,
+    "type1_alpha": 0.05,
+    "n_covariates": 0
+  },
+  "adjusted": {
+    "lambda_gc": 0.9994685214930457,
+    "type1_error": 0.05069,
+    "type1_alpha": 0.05,
+    "n_covariates": 10
+  },
+  "loci": [
+    {
+      "locus": "BCL11A",
+      "r2_planted": 0.07546000000000024,
+      "beta_planted": 0.449773279039643,
+      "sample_freq": 0.24615384615384617,
+      "predicted_power": 0.9972525570882103,
+      "p_unadjusted": 1.0453318473607403e-17,
+      "p_adjusted": 5.689588675354638e-21,
+      "beta_adjusted": 0.5235533556020842,
+      "recovered": true,
+      "empirical_power": 0.998,
+      "empirical_power_ci95": [
+        0.9927941610885425,
+        0.9997576988831227
+      ],
+      "empirical_power_unadjusted": 0.974
+    },
+    {
+      "locus": "HBS1L-MYB",
+      "r2_planted": 0.02599999999999998,
+      "beta_planted": 0.4687732337024138,
+      "sample_freq": 0.06230769230769231,
+      "predicted_power": 0.21812037861254463,
+      "p_unadjusted": 0.0001903384774414964,
+      "p_adjusted": 0.00015525098939517295,
+      "beta_adjusted": 0.3826344748341144,
+      "recovered": false,
+      "empirical_power": 0.375,
+      "empirical_power_ci95": [
+        0.3448999221212981,
+        0.405838439381056
+      ],
+      "empirical_power_unadjusted": 0.249
+    },
+    {
+      "locus": "HBB cluster",
+      "r2_planted": 0.03593700000000033,
+      "beta_planted": 0.40258585105596956,
+      "sample_freq": 0.12538461538461537,
+      "predicted_power": 0.531045614284533,
+      "p_unadjusted": 5.303486582374538e-07,
+      "p_adjusted": 1.0210516850146564e-06,
+      "beta_adjusted": 0.3668603552795926,
+      "recovered": false,
+      "empirical_power": 0.419,
+      "empirical_power_ci95": [
+        0.38819662922677944,
+        0.45028163840026025
+      ],
+      "empirical_power_unadjusted": 0.388
+    }
+  ],
+  "predicted": {
+    "unadjusted_lambda_gc": 1.3687943262411348,
+    "power_pc_adjusted": {
+      "BCL11A": 0.9972525570882103,
+      "HBS1L-MYB": 0.21812037861254463,
+      "HBB cluster": 0.531045614284533
+    }
+  },
+  "predictions_match_declared": true,
+  "runtime_s": 4.3118438720703125,
+  "provenance": {
+    "hbfgwas_version": "0.1.0",
+    "git_commit": "fbc75d9f13411a71e336bb3d1bae188768939aae",
+    "config_path": "/Users/cchuang/projects/hbf-gwas/config/analysis.yaml",
+    "config_sha256": "adeb39b39f711dba83fdc2430295ad7318b681ef0bde1caa6f5d35fb10264a25",
+    "python": "3.12.13",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "platform": "macOS-27.2-arm64-arm-64bit",
+    "run_utc": "2026-11-10T18:44:31Z"
+  }
+}

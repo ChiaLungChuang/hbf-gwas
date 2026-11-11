@@ -1,0 +1,9 @@
+criterion                   status        observed      rule                                 detail                                                          
+unadjusted lambda_GC        PASS          1.3806        > 1.2                                                                                                
+PC-adjusted lambda_GC       PASS          0.9995        >= 0.97 and <= 1.05                                                                                  
+PC-adjusted type I error    PASS          0.0507        at alpha 0.05: >= 0.04 and <= 0.06                                                                   
+locus BCL11A recovery       PASS          p = 5.69e-21  p < 5e-08 if predicted power >= 0.8  REQUIRED (predicted power 1.00); recovered                      
+locus HBS1L-MYB recovery    NOT REQUIRED  p = 0.000155  p < 5e-08 if predicted power >= 0.8  underpowered, not required (predicted power 0.22); not recovered
+locus HBB cluster recovery  NOT REQUIRED  p = 1.02e-06  p < 5e-08 if predicted power >= 0.8  underpowered, not required (predicted power 0.53); not recovered
+
+GATE PASSED

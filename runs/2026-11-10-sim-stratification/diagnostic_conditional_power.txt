@@ -1,0 +1,7 @@
+sample correlation between planted genotypes:
+[[1.    0.081 0.009]
+ [0.081 1.    0.007]
+ [0.009 0.007 1.   ]]
+      BCL11A: genotype variance kept after PCs 0.962; E[z | genotypes] 8.427 vs unconditional sqrt(ncp) 8.228; conditional power 0.999; unconditional 0.997
+   HBS1L-MYB: genotype variance kept after PCs 0.975; E[z | genotypes] 5.213 vs unconditional sqrt(ncp) 4.673; conditional power 0.406; unconditional 0.218
+ HBB cluster: genotype variance kept after PCs 0.938; E[z | genotypes] 5.354 vs unconditional sqrt(ncp) 5.529; conditional power 0.461; unconditional 0.531

@@ -1,0 +1,75 @@
+{
+  "experiment": "simulated",
+  "design": {
+    "n": 650,
+    "n_per_subpop": [
+      93,
+      93,
+      93,
+      93,
+      93,
+      93,
+      92
+    ],
+    "n_null_variants": 100000,
+    "monomorphic_null_variants": 0,
+    "fst": 0.01,
+    "shift_var_fraction": 0.2,
+    "n_pcs": 10,
+    "power_reps": 1000,
+    "seeds": {
+      "sim_genotypes": 20261101,
+      "sim_phenotype": 20261102,
+      "sim_power_reps": 20261103
+    }
+  },
+  "unadjusted": {
+    "lambda_gc": 1.3805589398766014,
+    "type1_error": 0.09665,
+    "type1_alpha": 0.05,
+    "n_covariates": 0
+  },
+  "adjusted": {
+    "lambda_gc": 0.9994685214930457,
+    "type1_error": 0.05069,
+    "type1_alpha": 0.05,
+    "n_covariates": 10
+  },
+  "fst_estimate": 0.00997124296023796,
+  "loci": [
+    {
+      "locus": "BCL11A",
+      "predicted_power": 0.9972525570882103,
+      "p_adjusted": 5.689588675354638e-21,
+      "recovered": true,
+      "empirical_power": 0.998,
+      "empirical_power_ci95": [
+        0.9927941610885425,
+        0.9997576988831227
+      ]
+    },
+    {
+      "locus": "HBS1L-MYB",
+      "predicted_power": 0.21812037861254463,
+      "p_adjusted": 0.00015525098939517295,
+      "recovered": false,
+      "empirical_power": 0.375,
+      "empirical_power_ci95": [
+        0.3448999221212981,
+        0.405838439381056
+      ]
+    },
+    {
+      "locus": "HBB cluster",
+      "predicted_power": 0.531045614284533,
+      "p_adjusted": 1.0210516850146564e-06,
+      "recovered": false,
+      "empirical_power": 0.419,
+      "empirical_power_ci95": [
+        0.38819662922677944,
+        0.45028163840026025
+      ]
+    }
+  ],
+  "predicted_unadjusted_lambda_gc": 1.3687943262411348
+}

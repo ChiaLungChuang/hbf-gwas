@@ -11,3 +11,45 @@ reasons are in [docs/decisions.md](docs/decisions.md).
 - Item 1 scaffold: `hbfgwas` package (src layout, Python 3.11+), pytest,
   ruff, GitHub Actions CI (lint, shellcheck, forbidden-wording check on files
   and commit messages, tests on Python 3.11 and 3.12).
+- Item 2 `hbfgwas.loci`: the three loci (BCL11A rs1427407, HBS1L-MYB
+  rs9399137, HBB cluster rs7482144) with GRCh37 positions, alleles,
+  1000 Genomes AFR frequencies and literature effect sizes, each with its
+  source. Every value is `verified: false`; the 1000 Genomes AFR frequency of
+  rs7482144 is null (not found). `python -m hbfgwas.loci check` and
+  `pytest -m realdata` fail until the user signs the table off.
+- Item 3 `hbfgwas.power`: analytic power of the 1-df additive test via the
+  noncentral chi-square (ncp = n R2/(1-R2), optional covariate R2), R2 from
+  beta + MAF, and inverses `required_r2` / `required_n`.
+- Item 4 `hbfgwas.simulate`: Balding-Nichols genotypes for several
+  subpopulations with configurable Fst, an Fst moment estimator, the analytic
+  expected null chi-square under stratification, and a three-component
+  phenotype (planted effects, subpopulation shift, noise) that accepts real
+  genotype matrices and many repetitions at once. Calibration tests fail if
+  the simulation stops producing structure.
+- Item 5 `hbfgwas.assoc`: vectorised additive linear regression with
+  covariates (Frisch-Waugh-Lovell, t-distribution p-values, many phenotypes
+  at once), exact PCA of the standardised genotype matrix, lambda_GC, type I
+  error, empirical power, QQ plot with a pointwise band, a plink2 `--glm`
+  reader, and `compare_to_plink2` (allele-flip aware, tolerance on BETA and
+  -log10 P).
+- Item 6 `config/analysis.yaml` (pre-registration, declared before any
+  experiment ran) and `hbfgwas.gate` (`python -m hbfgwas.gate`): QC, PCA,
+  significance, concordance tolerances, seeds, planted effects, simulated
+  experiment design with analytic predictions, and the brief's acceptance
+  criteria. `tests/test_config.py` pins every value the brief specifies.
+- Item 7 `hbfgwas.experiment` and `scripts/run_stratification.py`: the
+  pre-registered stratification experiment on simulated genotypes (lambda_GC
+  and type I error without and with 10 PCs, planted-locus recovery, empirical
+  power over 1000 phenotype redraws), two-panel QQ figure and summary JSON in
+  `docs/figures/`, full results under `runs/`. CI re-runs it, applies the
+  gate, and checks it reproduces the committed summary.
+- Item 8 real-data scripts `scripts/00_download_1kg.sh` to `05_report.py`,
+  `scripts/_common.sh`, `hbfgwas.pipeline` (sentinel lookup by rsID or
+  GRCh37 position, phenotype simulation on exported real genotypes, report
+  with Python-vs-plink2 concordance), `resources/long_range_ld_grch37.tsv`
+  (all entries unverified), and `tests/synthetic_1kg.py`, a synthetic
+  plink2 fileset on which CI runs 00 -> 05 end to end with a pinned official
+  plink2 build. Not run on real data.
+- Item 9 README (claim and non-claim first; status table with separate
+  simulated-genotype and real-genotype columns, the real column "not yet
+  run") and `docs/running-real-data.md` (Phase 2 walkthrough).
