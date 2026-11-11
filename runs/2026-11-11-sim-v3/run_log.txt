@@ -1,0 +1,10 @@
+n = 650, null variants = 100000, Fst = 0.01 (estimated 0.01000)
+predicted unadjusted lambda_GC = 1.3688
+unadjusted: lambda_GC = 1.3422, type I error at 0.05 = 0.0897
+  adjusted: lambda_GC = 0.9980, type I error at 0.05 = 0.0505
+      BCL11A: predicted power 0.9958, empirical 0.995 [0.990, 0.997], primary p_adjusted = 3.41e-09 (recovered)
+   HBS1L-MYB: predicted power 0.0311, empirical 0.030 [0.023, 0.038], primary p_adjusted = 7.51e-06 (not recovered)
+ HBB cluster: predicted power 0.2160, empirical 0.203 [0.186, 0.222], primary p_adjusted = 2.94e-06 (not recovered)
+predictions match declared config values: True
+runtime 4.9 s; wrote runs/2026-11-11-sim-v3/results.json
+copied summary and figure to docs/figures/

@@ -1,6 +1,6 @@
 {
   "experiment": "simulated",
-  "prereg_version": "sim-v2",
+  "prereg_version": "sim-v3",
   "design": {
     "n": 650,
     "n_per_subpop": [
@@ -21,60 +21,64 @@
     "power_reps": 2000,
     "prediction_shift_draws": 2000,
     "seeds": {
-      "sim_genotypes": 20261101,
-      "sim_phenotype": 20261102,
-      "sim_power_reps_v2": 20261104,
-      "sim_prediction": 20261105
+      "seed_key": "sim_v3",
+      "seed": 20261111,
+      "spawned_in_order": [
+        "genotypes",
+        "phenotype",
+        "power_reps",
+        "prediction"
+      ]
     }
   },
   "unadjusted": {
-    "lambda_gc": 1.3824782929831796,
-    "type1_error": 0.0969,
+    "lambda_gc": 1.3422384698000696,
+    "type1_error": 0.08972,
     "type1_alpha": 0.05,
     "n_covariates": 0
   },
   "adjusted": {
-    "lambda_gc": 1.002986894903118,
-    "type1_error": 0.05091,
+    "lambda_gc": 0.9979904423430074,
+    "type1_error": 0.05054,
     "type1_alpha": 0.05,
     "n_covariates": 10
   },
-  "fst_estimate": 0.00997124296023796,
+  "fst_estimate": 0.009997887260716404,
   "loci": [
     {
       "locus": "BCL11A",
-      "predicted_power": 0.9995525929312282,
-      "empirical_power": 0.999,
+      "predicted_power": 0.995812865302052,
+      "empirical_power": 0.9945,
       "empirical_power_ci95": [
-        0.9963923714301715,
-        0.9998788724094432
+        0.9901803370101006,
+        0.9972513181853675
       ],
-      "empirical_minus_predicted": -0.0005525929312282241,
-      "p_adjusted": 6.806856370123135e-22,
+      "empirical_minus_predicted": -0.001312865302051991,
+      "p_adjusted": 3.4079084088829044e-09,
       "recovered": true
     },
     {
       "locus": "HBS1L-MYB",
-      "predicted_power": 0.8090189965734119,
-      "empirical_power": 0.806,
+      "predicted_power": 0.031058356029647242,
+      "empirical_power": 0.03,
       "empirical_power_ci95": [
-        0.7879764531699424,
-        0.8231217216433897
+        0.022969550402137485,
+        0.03844885609627016
       ],
-      "empirical_minus_predicted": -0.0030189965734118696,
-      "p_adjusted": 1.2442795197396252e-06,
+      "empirical_minus_predicted": -0.0010583560296472429,
+      "p_adjusted": 7.509644739193653e-06,
       "recovered": false
     },
     {
       "locus": "HBB cluster",
-      "predicted_power": 0.46206525319290315,
-      "empirical_power": 0.451,
+      "predicted_power": 0.21603573978214352,
+      "empirical_power": 0.2035,
       "empirical_power_ci95": [
-        0.42902783301758196,
-        0.47311602845944506
+        0.18605025140859713,
+        0.22182328849595753
       ],
-      "empirical_minus_predicted": -0.011065253192903135,
-      "p_adjusted": 6.809974506475362e-07,
+      "empirical_minus_predicted": -0.012535739782143535,
+      "p_adjusted": 2.9363261673762786e-06,
       "recovered": false
     }
   ],

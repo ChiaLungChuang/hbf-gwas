@@ -1,0 +1,87 @@
+{
+  "experiment": "simulated",
+  "prereg_version": "sim-v3",
+  "design": {
+    "n": 650,
+    "n_per_subpop": [
+      93,
+      93,
+      93,
+      93,
+      93,
+      93,
+      92
+    ],
+    "n_null_variants": 100000,
+    "monomorphic_null_variants": 0,
+    "fst": 0.01,
+    "shift_var_fraction": 0.2,
+    "n_pcs": 10,
+    "planted_effect_mode": "beta (per-allele beta_sd)",
+    "power_reps": 2000,
+    "prediction_shift_draws": 2000,
+    "seeds": {
+      "seed_key": "sim_v3",
+      "seed": 20261111,
+      "spawned_in_order": [
+        "genotypes",
+        "phenotype",
+        "power_reps",
+        "prediction"
+      ]
+    }
+  },
+  "unadjusted": {
+    "lambda_gc": 1.3422384698000696,
+    "type1_error": 0.08972,
+    "type1_alpha": 0.05,
+    "n_covariates": 0
+  },
+  "adjusted": {
+    "lambda_gc": 0.9979904423430074,
+    "type1_error": 0.05054,
+    "type1_alpha": 0.05,
+    "n_covariates": 10
+  },
+  "fst_estimate": 0.009997887260716404,
+  "loci": [
+    {
+      "locus": "BCL11A",
+      "predicted_power": 0.995812865302052,
+      "empirical_power": 0.9945,
+      "empirical_power_ci95": [
+        0.9901803370101006,
+        0.9972513181853675
+      ],
+      "empirical_minus_predicted": -0.001312865302051991,
+      "p_adjusted": 3.4079084088829044e-09,
+      "recovered": true
+    },
+    {
+      "locus": "HBS1L-MYB",
+      "predicted_power": 0.031058356029647242,
+      "empirical_power": 0.03,
+      "empirical_power_ci95": [
+        0.022969550402137485,
+        0.03844885609627016
+      ],
+      "empirical_minus_predicted": -0.0010583560296472429,
+      "p_adjusted": 7.509644739193653e-06,
+      "recovered": false
+    },
+    {
+      "locus": "HBB cluster",
+      "predicted_power": 0.21603573978214352,
+      "empirical_power": 0.2035,
+      "empirical_power_ci95": [
+        0.18605025140859713,
+        0.22182328849595753
+      ],
+      "empirical_minus_predicted": -0.012535739782143535,
+      "p_adjusted": 2.9363261673762786e-06,
+      "recovered": false
+    }
+  ],
+  "predicted_unadjusted_lambda_gc": 1.3687943262411348,
+  "predictions_match_declared": true
+}
