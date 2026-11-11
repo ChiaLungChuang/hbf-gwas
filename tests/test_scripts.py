@@ -161,6 +161,7 @@ def e2e(tmp_path_factory):
         "01_subset_afr.sh",
         "02_qc.sh",
         "03_pca.sh",
+        "03b_pc_plot.py",
         "04_assoc.sh",
         "05_report.py",
     ):
@@ -280,7 +281,14 @@ def test_e2e_report_and_plink2_concordance(e2e):
     assert len(res["loci"]) == 3
     assert all("NOT pre-registered" in x["predicted_power_source"] for x in res["loci"])
     assert (e2e["run"] / "qq_real.png").stat().st_size > 10_000
+
+
+def test_e2e_pc_plot_at_step_c(e2e):
+    # review item F: its own script, run right after 03_pca.sh
     assert (e2e["run"] / "pc1_pc2_by_population.png").stat().st_size > 10_000
+    counts = json.loads((e2e["run"] / "pc_plot_counts.json").read_text())
+    assert set(counts) == set(synth.AFR)  # the seven AFR populations, not SuperPop
+    assert sum(counts.values()) == synth.EXPECTED_AFR_AFTER_REL
 
 
 def test_e2e_gate_refuses_real_data_before_preregistration(e2e):

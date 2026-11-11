@@ -52,6 +52,7 @@ scripts/00_download_1kg.sh   # manifest: $RUN_DIR/download_manifest.tsv
 scripts/01_subset_afr.sh     # AFR minus related list; fails unless 640-665 samples remain
 scripts/02_qc.sh             # $RUN_DIR/qc_filters.tsv, $RUN_DIR/sentinels.tsv
 scripts/03_pca.sh            # $RUN_DIR/pca_eigenval.txt, 03_pca_counts.tsv, het_summary.tsv
+.venv/bin/python scripts/03b_pc_plot.py   # $RUN_DIR/pc1_pc2_by_population.png
 ```
 
 What to expect and check:
@@ -70,9 +71,8 @@ What to expect and check:
   (every entry unverified; see `resources/README.md`). The KING step runs
   even though the 1000 Genomes related-sample list was already removed; if
   it removes nobody, the script says so, as 02 does for `--geno`/`--mind`.
-* The PC1 vs PC2 plot by the seven AFR populations is produced by
-  `05_report.py`; to look at it after step 3, inspect `data/1kg/pca.eigenvec`
-  with the `Population` column of `data/1kg/afr_qc.psam`.
+* `03b_pc_plot.py`: PC1 vs PC2 coloured by the seven AFR populations (the
+  `Population` column, not SuperPop), with the count per population.
 
 Commit `$RUN_DIR` (logs, tables, eigenvalues). **Stop and report** (Phase 2
 step c).

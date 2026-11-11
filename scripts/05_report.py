@@ -2,11 +2,11 @@
 """05: report on the real-genotype association (phenotype simulated).
 
 lambda_GC without and with the PCs, empirical type I error on variants away
-from the planted sentinels, PC1 vs PC2 coloured by the seven AFR populations
-(the Population column, not SuperPop), locus recovery against the predicted
-power, and the Python-vs-plink2 concordance check (hbfgwas.assoc is the
-tested reference). Writes RUN_DIR/results.json, qq_real.png,
-pc1_pc2_by_population.png and concordance_python_*.tsv.
+from the planted sentinels, locus recovery against the predicted power, and
+the Python-vs-plink2 concordance check (hbfgwas.assoc is the tested
+reference). Writes RUN_DIR/results.json, qq_real.png and
+concordance_python_*.tsv. (The PC1 vs PC2 plot is scripts/03b_pc_plot.py,
+run at step c.)
 
 Uses the same environment variables as the shell scripts (CONFIG, DATA_DIR,
 RUN_DIR). The acceptance gate is a separate step:

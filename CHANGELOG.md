@@ -86,3 +86,5 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   heterozygote-deficit records that must be kept.
 - E: `03_pca.sh` states explicitly when the KING step removes no samples
   (and lists any it does remove), like the missingness filters in 02.
+- F: `scripts/03b_pc_plot.py` draws PC1 vs PC2 by the seven AFR populations at
+  step c, right after the PCA; `05_report.py` no longer draws it.
