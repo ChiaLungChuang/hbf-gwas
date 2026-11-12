@@ -200,6 +200,9 @@ def e2e(tmp_path_factory):
         "YRI": 0.1,
     }
     cfg["sensitivity"]["exclude_samples"] = ["SYN_ASW_05"]
+    # the real-data criteria (predictions for the 652 real genotypes) do not apply
+    # to the synthetic fileset
+    cfg["acceptance"]["real"] = None
     seed_file = tmp / "step_e_seed.yaml"
     seed_file.write_text("seed: 777\n")
     cfg_path = tmp / "synthetic_config.yaml"

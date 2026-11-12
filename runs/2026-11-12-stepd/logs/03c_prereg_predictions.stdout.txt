@@ -1,0 +1,70 @@
+wrote /Users/cchuang/projects/hbf-gwas/data/1kg/loci.tsv
+BCL11A: rs1427407 -> rsid (rs1427407 2:60718043.0 T/G)
+HBS1L-MYB: rs9399137 -> rsid (rs9399137 6:135419018.0 T/C)
+HBB cluster: rs7482144 -> not found
+PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)                  cog-genomics.org/plink/2.0/
+(C) 2005-2026 S Purcell, C Chang, B Demaille      GNU General Public License v3
+Logging to /Users/cchuang/projects/hbf-gwas/data/1kg/prereg_sentinels.log.
+Options in effect:
+  --export A
+  --extract /Users/cchuang/projects/hbf-gwas/data/1kg/prereg_ids.txt
+  --keep /Users/cchuang/projects/hbf-gwas/data/1kg/unrelated.id
+  --out /Users/cchuang/projects/hbf-gwas/data/1kg/prereg_sentinels
+  --pfile /Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc
+
+Start time: Thu Nov 12 11:23:55 2026
+16384 MiB RAM detected; reserving 8192 MiB for main workspace.
+Using up to 8 compute threads.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc.psam.
+14698808 variants loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc.pvar.
+2 categorical phenotypes loaded.
+--extract: 2 variants remaining.
+--keep: 652 samples remaining.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) remaining after
+main filters.
+2 variants remaining after main filters.
+--export A pass 1/1: loading... 0%50% writing... 0%100% done.
+--export A: /Users/cchuang/projects/hbf-gwas/data/1kg/prereg_sentinels.raw
+written.
+End time: Thu Nov 12 11:23:56 2026
+20000 variant IDs -> /Users/cchuang/projects/hbf-gwas/data/1kg/prereg_null_ids.txt
+PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)                  cog-genomics.org/plink/2.0/
+(C) 2005-2026 S Purcell, C Chang, B Demaille      GNU General Public License v3
+Logging to /Users/cchuang/projects/hbf-gwas/data/1kg/prereg_null.log.
+Options in effect:
+  --export A
+  --extract /Users/cchuang/projects/hbf-gwas/data/1kg/prereg_null_ids.txt
+  --keep /Users/cchuang/projects/hbf-gwas/data/1kg/unrelated.id
+  --out /Users/cchuang/projects/hbf-gwas/data/1kg/prereg_null
+  --pfile /Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc
+
+Start time: Thu Nov 12 11:24:17 2026
+16384 MiB RAM detected; reserving 8192 MiB for main workspace.
+Using up to 8 compute threads.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc.psam.
+14698808 variants loaded from
+/Users/cchuang/projects/hbf-gwas/data/1kg/afr_qc.pvar.
+2 categorical phenotypes loaded.
+--extract: 20000 variants remaining.
+--keep: 652 samples remaining.
+652 samples (335 females, 316 males, 1 ambiguous; 651 founders) remaining after
+main filters.
+20000 variants remaining after main filters.
+--export A pass 1/1: loading... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% writing... 0%63%100% done.
+--export A: /Users/cchuang/projects/hbf-gwas/data/1kg/prereg_null.raw written.
+End time: Thu Nov 12 11:24:20 2026
+predicted lambda_GC unadjusted: 1.1999 [1.1449, 1.2703] over 20000 null variants
+predicted lambda_GC pc_adjusted: 1.0045 [1.0028, 1.0066] over 20000 null variants
+BCL11A: conditional power 0.9896 (PC-adjusted), 0.9931 (unadjusted); reported, not gated
+HBS1L-MYB: conditional power 0.1694 (PC-adjusted), 0.0262 (unadjusted); reported, not gated
+HBB cluster: not testable in this callset
+wrote /Users/cchuang/projects/hbf-gwas/runs/2026-11-12-stepd/prereg_predictions.json
+predicted lambda_GC unadjusted: 1.1984 [1.1444, 1.2690] over 20000 null variants
+predicted lambda_GC pc_adjusted: 1.0045 [1.0028, 1.0063] over 20000 null variants
+BCL11A: conditional power 0.9897 (PC-adjusted), 0.9933 (unadjusted); reported, not gated
+HBS1L-MYB: conditional power 0.1645 (PC-adjusted), 0.0260 (unadjusted); reported, not gated
+HBB cluster: not testable in this callset
+wrote /Users/cchuang/projects/hbf-gwas/runs/2026-11-12-stepd/prereg_predictions_sensitivity.json

@@ -1,0 +1,5 @@
+[17:23:25] plink2: PLINK v2.0.0-b.1.4 M1 (7 Nov 2026) (pinned v2.0.0-b.1.4, 7 Nov 2026)
+[17:23:32] sensitivity PCA: 651 samples, 10 PCs; eigenvalues in /Users/cchuang/projects/hbf-gwas/runs/2026-11-12-stepd/sens_pca_eigenval.txt
+real 10.35
+user 6.21
+sys 1.98

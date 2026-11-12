@@ -61,7 +61,7 @@ def test_config_get_and_format():
     assert pipeline.format_scalar(pipeline.config_get(CFG, "qc.maf")) == "0.01"
     assert pipeline.format_scalar(pipeline.config_get(CFG, "qc.hwe_p")) == "1e-06"
     assert pipeline.format_scalar(pipeline.config_get(CFG, "pca.n_pcs")) == "10"
-    assert pipeline.format_scalar(pipeline.config_get(CFG, "acceptance.real")) == "null"
+    assert pipeline.format_scalar(pipeline.config_get({"a": {"b": None}}, "a.b")) == "null"
     with pytest.raises(KeyError):
         pipeline.config_get(CFG, "qc.nope")
 
@@ -243,8 +243,12 @@ def test_real_phenotype_refuses_an_empty_seed_or_undeclared_shift(tmp_path, pvar
         )
     seeded = tmp_path / "s.yaml"
     seeded.write_text("seed: 1\n")
+    undeclared = _cfg_with_shift()
+    undeclared["real_data_simulation"]["population_shift"] = None
     with pytest.raises(ValueError, match="not pre-registered"):
-        pipeline.simulate_phenotype_from_raw(CFG, pipeline.read_raw(path), smap, psam, seeded)
+        pipeline.simulate_phenotype_from_raw(
+            undeclared, pipeline.read_raw(path), smap, psam, seeded
+        )
 
 
 def test_step_e_seed_children_are_stable(tmp_path):

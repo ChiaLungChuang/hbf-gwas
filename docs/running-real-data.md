@@ -101,8 +101,14 @@ computed from the real genotypes and PCs before any phenotype is drawn.
 Before any phenotype exists, run
 
 ```bash
-scripts/03c_prereg_predictions.sh   # $RUN_DIR/prereg_predictions.json
+scripts/03d_sensitivity_pca.sh      # PCs without config sensitivity.exclude_samples (NA20314)
+scripts/03c_prereg_predictions.sh   # $RUN_DIR/prereg_predictions.json (+ _sensitivity.json)
 ```
+
+The shift per population is fixed in `real_data_simulation.population_shift`
+(declared before the predictions; D-038), and `config/step_e_seed.yaml`
+stays `seed: null` until after the tag (D-039). The step d record of
+2026-11-12 is in `runs/2026-11-12-stepd/`.
 
 It writes, from the real genotypes and PCs:
 - the conditional power of each testable sentinel, and which loci the sim-v3

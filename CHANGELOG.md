@@ -143,6 +143,10 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   `_common.sh` (`require_step_e_ready`). The fixed-shift code, seed slot and
   sensitivity PCA, written for step d (`a2bbb96`, `67a8df2`), now arrive with
   this PR.
+- Step d (proposed pre-registration): exact population shift (seeded draw,
+  declared first), empty step e seed slot (`config/step_e_seed.yaml`), NA20314
+  sensitivity PCA (`03d`) and predictions, real-data criteria real-v1 in
+  `acceptance.real`; predictions in `runs/2026-11-12-stepd/` (no phenotype).
 
 ### Repository and CI
 - CI minutes (2026-11-12, the user's request after the monthly limit was

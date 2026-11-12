@@ -1,0 +1,6 @@
+[17:23:45] plink2: PLINK v2.0.0-b.1.4 M1 (7 Nov 2026) (pinned v2.0.0-b.1.4, 7 Nov 2026)
+[17:24:36] predictions (no phenotype drawn): /Users/cchuang/projects/hbf-gwas/runs/2026-11-12-stepd/prereg_predictions.json
+[17:24:54] sensitivity predictions without NA20314: /Users/cchuang/projects/hbf-gwas/runs/2026-11-12-stepd/prereg_predictions_sensitivity.json
+real 70.99
+user 60.60
+sys 3.43
