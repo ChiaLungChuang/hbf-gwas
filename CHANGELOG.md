@@ -118,3 +118,7 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   checked each, 2 superseded, 17 not covered; `03c`/`04` require the new
   analysis check (`check --analysis`); the checklist shows each row's status;
   BCL11A beta_sd 0.456435 carries a "not 0.26" comment; S21 note fixed.
+- `docs/qc-questions.md`: PCA MAF >= 0.05 was declared before the step c run
+  but is Claude's unapproved addition (D-036); NA20320 is plink2's only
+  non-founder (its mother is on the related list), and each step's treatment
+  of it (D-037).
