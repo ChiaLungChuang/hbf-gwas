@@ -1,0 +1,39 @@
+name: Rebuild from a clean clone
+
+# Expensive, so manual and weekly only (it is not a pre-merge check; CI is).
+# scripts/rebuild.sh clones the commit afresh, builds a new virtualenv without
+# any pip cache, and runs lint, the wording check, every test (plink2
+# end-to-end tests required) and the pre-registered simulated experiment with
+# its gate. plink2 is downloaded fresh, not restored from the Actions cache.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * 1" # Mondays 06:17 UTC
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rebuild
+  cancel-in-progress: true
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install plink2 (official build, pinned), downloaded fresh
+        uses: ./.github/actions/install-plink2
+        with:
+          use-cache: "false"
+      - name: Rebuild from a clean clone
+        env:
+          REQUIRE_PLINK2: "1"
+        run: scripts/rebuild.sh
