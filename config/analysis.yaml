@@ -96,6 +96,10 @@ seeds:
   real_phenotype: 20261201 # never used; superseded by config/step_e_seed.yaml (step d)
   real_concordance_sample: 20261202 # never used; superseded by config/step_e_seed.yaml (step d)
   real_prediction: 20261203 # Phase 2 step d predictions (shift draws, null variant sample)
+  # Step d: draws the seven population_shift values ONCE (N(0,1) per population in
+  # alphabetical order, centred and scaled to variance 0.2 over the 652 samples'
+  # population labels; no genotypes involved). Committed and pushed before use.
+  real_shift_draw: 20261112
 
 # --- sentinels on real genotypes ----------------------------------------------
 # User rule (review item C, D-028), fixed before any real data: a sentinel that
