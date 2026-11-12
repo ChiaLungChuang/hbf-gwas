@@ -114,3 +114,7 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   callset. No phenotype simulated, no association run.
 - `01_subset_afr.sh` parses plink2's "<n> variants in" log line (the loaded
   count was NA in this run's counts table).
+- Locus sign-off (issue #3): `loci.SIGNOFF` records 20 verified rows with who
+  checked each, 2 superseded, 17 not covered; `03c`/`04` require the new
+  analysis check (`check --analysis`); the checklist shows each row's status;
+  BCL11A beta_sd 0.456435 carries a "not 0.26" comment; S21 note fixed.

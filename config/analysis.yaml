@@ -114,6 +114,10 @@ sentinels:
 planted_effects:
   - locus: BCL11A
     effect_allele: T
+    # NOT 0.26. Wonkam et al. 2025 report beta = 0.26 for rs1427407 in the same
+    # sentence as the 7.6%, but in the paper's own trait units (cube-root HbF),
+    # not SD units. 0.456435 SD is derived from PVE 7.6% and MAF 0.24 (both
+    # checked by the user by hand, 2026-11-11) and stays as it is.
     beta_sd: 0.456435
     derivation: "sqrt(PVE / (2 p (1 - p))) with PVE 0.076 and MAF 0.24 (Wonkam et al. 2025 global meta-analysis)"
   - locus: HBS1L-MYB
@@ -148,7 +152,7 @@ simulated_experiment:
   prediction_shift_draws: 2000 # shift draws averaged by hbfgwas.predict.conditional_power
   planted:
     - locus: BCL11A
-      beta_sd: 0.456435
+      beta_sd: 0.456435 # SD units, derived from PVE 7.6% and MAF 0.24; NOT Wonkam's 0.26 (trait units)
       ancestral_freq: 0.237519
       ancestral_freq_source: "1000 Genomes phase 3 AFR, T allele, via Ensembl GRCh37"
       r2: 0.075460
