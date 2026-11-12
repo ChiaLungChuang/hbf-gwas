@@ -21,7 +21,7 @@ file over 1 MB. It found the following, all in run records written before
 
 | What | Where (on `main` and the open branches) |
 |---|---|
-| the build machine's hostname (plink2's `Hostname:` line) | 13 plink2 logs in `runs/2026-11-11/logs/`, 3 in `runs/2026-11-12-stepd/logs/`. One older commit of `tests/test_redact.py` (7dd2bb9, on #33's branch) also used it as a test value; it was replaced by a made-up name in 14e3f41. |
+| the build machine's hostname (plink2's `Hostname:` line) | 13 plink2 logs in `runs/2026-11-11/logs/`, 3 in `runs/2026-11-12-stepd/logs/`. One older commit of `tests/test_redact.py` (7dd2bb9) also used it as a test value. That commit is only on the replaced branch `log-redaction` (PR #33, closed), not in the restacked history that would be published. |
 | the absolute path of this checkout, under the user's home directory | the same logs (about 280 occurrences, mostly plink2 `--pfile`/`--out` arguments and `Working directory:`), and `config_path` in `runs/2026-11-10-sim-stratification/results.json`, `runs/2026-11-10-sim-v2/results.json` and `runs/2026-11-11-sim-v3/results.json` |
 
 Not found anywhere in history: the user name or hostname in a commit message;
