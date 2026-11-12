@@ -53,8 +53,60 @@ def test_locus_recovery_criterion_does_not_demand_all_loci():
     assert not any("all" in str(k).lower() for k in rec)
 
 
-def test_real_data_criteria_not_written_before_phase2():
-    assert CFG["acceptance"]["real"] is None
+def test_real_data_criteria_follow_the_v3_rule():
+    # Phase 2 step d (proposed; final when merged and tagged prereg-v1)
+    real = CFG["acceptance"]["real"]
+    sim = CFG["acceptance"]["simulated"]
+    for key in (
+        "unadjusted_lambda_gc",
+        "adjusted_lambda_gc",
+        "adjusted_type1_error",
+        "power_calibration",
+    ):
+        assert {k: v for k, v in real[key].items() if k != "n_redraws"} == sim[key], key
+    assert real["power_calibration"]["n_redraws"] == 2000
+    assert real["predicted_power"] == {"BCL11A": 0.9896, "HBS1L-MYB": 0.1694}
+    threshold = CFG["acceptance"]["locus_recovery"]["required_if_predicted_power_at_least"]
+    assert real["required_loci"] == [
+        g for g, p in real["predicted_power"].items() if p >= threshold
+    ]
+    assert real["not_testable"] == ["HBB cluster"]
+
+
+def test_real_predictions_match_the_committed_step_d_record():
+    import json
+    from pathlib import Path
+
+    run = Path(__file__).resolve().parents[1] / "runs/2026-11-12-stepd"
+    pred = json.loads((run / "prereg_predictions.json").read_text())
+    real = CFG["acceptance"]["real"]
+    for gene, p in real["predicted_power"].items():
+        assert p == pytest.approx(pred["conditional_power"][gene]["pc_adjusted"]["power"], abs=5e-5)
+    lam = pred["predicted_lambda_gc"]["unadjusted"]
+    assert real["predicted_lambda_gc"]["unadjusted"]["median"] == pytest.approx(
+        lam["median"], abs=5e-5
+    )
+    assert pred["population_shift"] == CFG["real_data_simulation"]["population_shift"]
+
+
+def test_population_shift_is_centred_with_variance_02():
+    import numpy as np
+
+    shift = CFG["real_data_simulation"]["population_shift"]
+    counts = {"ACB": 95, "ASW": 55, "ESN": 99, "GWD": 113, "LWK": 97, "MSL": 85, "YRI": 108}
+    v = np.repeat([shift[k] for k in counts], list(counts.values()))
+    assert abs(v.mean()) < 1e-6 and v.var() == pytest.approx(0.2, abs=1e-6)
+
+
+def test_step_e_seed_slot_is_empty_until_after_the_tag():
+    from pathlib import Path
+
+    import yaml
+
+    seed = yaml.safe_load(
+        (Path(__file__).resolve().parents[1] / "config/step_e_seed.yaml").read_text()
+    )
+    assert seed == {"seed": None}
 
 
 def test_seeds_are_distinct_integers():

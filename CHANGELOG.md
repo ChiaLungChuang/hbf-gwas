@@ -122,3 +122,7 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   but is Claude's unapproved addition (D-036); NA20320 is plink2's only
   non-founder (its mother is on the related list), and each step's treatment
   of it (D-037).
+- Step d (proposed pre-registration): exact population shift (seeded draw,
+  declared first), empty step e seed slot (`config/step_e_seed.yaml`), NA20314
+  sensitivity PCA (`03d`) and predictions, real-data criteria real-v1 in
+  `acceptance.real`; predictions in `runs/2026-11-12-stepd/` (no phenotype).
