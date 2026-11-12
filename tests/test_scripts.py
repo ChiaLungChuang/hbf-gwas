@@ -230,8 +230,6 @@ def e2e(tmp_path_factory):
         "03b_pc_plot.py",
         "03d_sensitivity_pca.sh",
         "03c_prereg_predictions.sh",
-        "04_assoc.sh",
-        "05_report.py",
     ):
         r = _run(script, env)
         out[script] = r
@@ -239,6 +237,27 @@ def e2e(tmp_path_factory):
             pytest.fail(
                 f"{script} failed ({r.returncode})\nSTDOUT:\n{r.stdout}\nSTDERR:\n{r.stderr}"
             )
+    # Test-only real-data criteria for the synthetic fileset, written from its own
+    # step d predictions (the real ones are pre-registered in the step d PR). The
+    # lambda and type I bounds are deliberately wide: this checks the step e code
+    # path, not the synthetic numbers. The power calibration is the real rule.
+    pred = json.loads((tmp / "run" / "prereg_predictions.json").read_text())
+    cfg["acceptance"]["real"] = {
+        "criteria_version": "synthetic-test",
+        "unadjusted_lambda_gc": {"at_least": 0.0, "at_most": 100.0},
+        "adjusted_lambda_gc": {"at_least": 0.0, "at_most": 100.0},
+        "adjusted_type1_error": {"alpha": 0.05, "at_least": 0.0, "at_most": 1.0},
+        "power_calibration": {"max_abs_diff": 0.05, "n_redraws": 2000},
+        "predicted_power": {
+            g: round(v["pc_adjusted"]["power"], 4) for g, v in pred["conditional_power"].items()
+        },
+        "required_loci": [],
+    }
+    cfg_path.write_text(yaml.safe_dump(cfg, sort_keys=False))
+    r = _run("step_e.sh", env)
+    out["step_e.sh"] = r
+    if r.returncode not in (0, 3):  # 3: a gated criterion failed, which the tests inspect
+        pytest.fail(f"step_e.sh failed ({r.returncode})\nSTDOUT:\n{r.stdout}\nSTDERR:\n{r.stderr}")
     return {
         "tmp": tmp,
         "data": tmp / "data",
@@ -347,7 +366,8 @@ def test_e2e_report_and_plink2_concordance(e2e):
         assert res["concordance"][side]["n_compared"] >= 300
         assert res[side]["lambda_gc"] > 0
     assert len(res["loci"]) == 3
-    assert all("NOT pre-registered" in x["predicted_power_source"] for x in res["loci"])
+    sources = {x["predicted_power_source"] for x in res["loci"]}
+    assert sources == {"pre-registered (acceptance.real)"}
     assert (e2e["run"] / "qq_real.png").stat().st_size > 10_000
 
 
@@ -359,14 +379,18 @@ def test_e2e_pc_plot_at_step_c(e2e):
     assert sum(counts.values()) == synth.EXPECTED_AFR_AFTER_REL
 
 
-def test_e2e_gate_refuses_real_data_before_preregistration(e2e):
+def test_e2e_gate_refuses_real_data_before_preregistration(e2e, tmp_path):
+    cfg = yaml.safe_load(e2e["config"].read_text())
+    cfg["acceptance"]["real"] = None  # as on main before step d
+    unregistered = tmp_path / "unregistered.yaml"
+    unregistered.write_text(yaml.safe_dump(cfg, sort_keys=False))
     r = subprocess.run(
         [
             sys.executable,
             "-m",
             "hbfgwas.gate",
             "--config",
-            str(e2e["config"]),
+            str(unregistered),
             "--experiment",
             "real",
             "--results",
@@ -376,6 +400,124 @@ def test_e2e_gate_refuses_real_data_before_preregistration(e2e):
         text=True,
     )
     assert r.returncode == 2
+
+
+def test_e2e_step_e_power_redraws(e2e):
+    rd = json.loads((e2e["run"] / "power_redraws.json").read_text())
+    assert rd["n_redraws"] == 2000 and rd["seed_child"] == "power_reps"
+    assert rd["step_e_seed"] == 777
+    declared = yaml.safe_load(e2e["config"].read_text())["acceptance"]["real"]["predicted_power"]
+    assert set(rd["loci"]) == set(declared)
+    for gene, r in rd["loci"].items():
+        print(gene, r["empirical_power"], r["empirical_power_ci95"], declared[gene])
+        # the run recomputes the prediction from the same genotypes: it equals the declared value
+        assert round(r["predicted_power_recomputed"], 4) == declared[gene]
+        assert abs(r["empirical_power"] - declared[gene]) <= 0.05
+
+
+def test_e2e_step_e_sensitivity_scan(e2e):
+    for f in ("glm_sens_nopc.HBF_SIM.glm.linear", "glm_sens_pc.HBF_SIM.glm.linear"):
+        assert (e2e["data"] / f).exists(), f
+    res = json.loads((e2e["run"] / "results.json").read_text())
+    sens = res["sensitivity"]
+    assert sens["status"] == "run" and sens["gated"] is False
+    assert sens["excluded_samples"] == ["SYN_ASW_05"]
+    assert sens["n_samples_analysed"] == res["n_samples_analysed"] - 1
+    assert set(sens["loci"]) == {x["locus"] for x in res["loci"]}
+    for side in ("unadjusted", "adjusted"):
+        assert sens[side]["lambda_gc"] > 0
+
+
+def test_e2e_step_e_gate_judges_every_criterion(e2e):
+    gate = json.loads((e2e["run"] / "gate.json").read_text())
+    names = [c["name"] for c in gate["checks"]]
+    for want in ("unadjusted lambda_GC", "PC-adjusted lambda_GC", "PC-adjusted type I error"):
+        assert want in names
+    calib = [c for c in gate["checks"] if c["name"].endswith("power calibration")]
+    assert len(calib) == 3
+    assert all(c["status"] == "PASS" for c in calib), calib
+    assert e2e["out"]["step_e.sh"].returncode == (0 if gate["passed"] else 3)
+
+
+def _step_e_config(tmp_path: Path, real=True, shift=True) -> Path:
+    cfg = load_config()
+    cfg["acceptance"]["real"] = (
+        {
+            "unadjusted_lambda_gc": {"at_least": 0.0, "at_most": 100.0},
+            "adjusted_lambda_gc": {"at_least": 0.0, "at_most": 100.0},
+            "adjusted_type1_error": {"alpha": 0.05, "at_least": 0.0, "at_most": 1.0},
+            "power_calibration": {"max_abs_diff": 0.05, "n_redraws": 10},
+        }
+        if real
+        else None
+    )
+    cfg["real_data_simulation"]["population_shift"] = (
+        {p: 0.0 for p in ("ACB", "ASW", "ESN", "GWD", "LWK", "MSL", "YRI")} if shift else None
+    )
+    path = tmp_path / f"step_e_config_{real}_{shift}.yaml"  # one file per variant
+    path.write_text(yaml.safe_dump(cfg, sort_keys=False))
+    return path
+
+
+def _seed(tmp_path: Path, value="1234") -> Path:
+    p = tmp_path / f"seed_{value}.yaml"  # one file per value
+    p.write_text(f"seed: {value}\n")
+    return p
+
+
+def _step_e_env(tmp_path: Path, **extra) -> dict:
+    base = {
+        "PLINK2": _fake_plink2(tmp_path),
+        "CONFIG": _step_e_config(tmp_path),
+        "HBFGWAS_LOCI_TSV": _signed_loci(tmp_path),
+        "HBFGWAS_SKIP_PREREG_CHECK": 1,
+        "STEP_E_SEED_FILE": _seed(tmp_path),
+    }
+    base.update(extra)
+    return _env(tmp_path, **base)
+
+
+def test_step_e_refuses_without_the_prereg_tag(tmp_path):
+    empty = tmp_path / "empty.git"  # a repository with no tags, whatever this checkout has
+    subprocess.run(["git", "init", "-q", "--bare", str(empty)], check=True)
+    env = _step_e_env(tmp_path, GIT_DIR=empty)
+    env.pop("HBFGWAS_SKIP_PREREG_CHECK")
+    r = _run("step_e.sh", env)
+    assert r.returncode == 1 and "prereg-v1" in r.stderr
+
+
+def test_step_e_refuses_an_unsigned_locus_table(tmp_path):
+    r = _run("step_e.sh", _step_e_env(tmp_path, HBFGWAS_LOCI_TSV=_unsigned_loci(tmp_path)))
+    assert r.returncode == 1 and "not signed off" in r.stderr
+
+
+def test_step_e_refuses_an_empty_seed(tmp_path):
+    r = _run("step_e.sh", _step_e_env(tmp_path, STEP_E_SEED_FILE=_seed(tmp_path, "null")))
+    assert r.returncode == 1 and "step e seed" in r.stderr
+
+
+def test_step_e_refuses_without_real_criteria(tmp_path):
+    r = _run("step_e.sh", _step_e_env(tmp_path, CONFIG=_step_e_config(tmp_path, real=False)))
+    assert r.returncode == 1 and "acceptance.real is empty" in r.stderr
+
+
+def test_step_e_refuses_an_undeclared_shift(tmp_path):
+    r = _run("step_e.sh", _step_e_env(tmp_path, CONFIG=_step_e_config(tmp_path, shift=False)))
+    assert r.returncode == 1 and "population_shift" in r.stderr
+
+
+def test_step_e_runs_once(tmp_path):
+    (tmp_path / "run").mkdir()
+    (tmp_path / "run" / "results.json").write_text("{}")
+    r = _run("step_e.sh", _step_e_env(tmp_path))
+    assert r.returncode == 1 and "runs once" in r.stderr
+
+
+def test_step_e_refusals_happen_before_any_phenotype(tmp_path):
+    r = _run("step_e.sh", _step_e_env(tmp_path, STEP_E_SEED_FILE=_seed(tmp_path, "null")))
+    assert r.returncode == 1
+    assert not (tmp_path / "data" / "pheno.tsv").exists()
+    assert not (tmp_path / "run" / "phenotype_meta.json").exists()
 
 
 def test_e2e_every_plink2_log_is_kept(e2e):

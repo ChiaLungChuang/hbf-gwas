@@ -29,32 +29,8 @@ in="$DATA_DIR/afr_qc"
 keep="$DATA_DIR/unrelated.id"
 n_pcs=$(cfg pca.n_pcs)
 
-# --- preconditions ---------------------------------------------------------
-loci="${HBFGWAS_LOCI_TSV:-}"
-if [ -n "$loci" ]; then
-	log "WARNING: HBFGWAS_LOCI_TSV is set; using $loci instead of exporting src/hbfgwas/loci.py"
-	"$PYTHON" -m hbfgwas.pipeline loci-ready --loci "$loci" ||
-		die "the locus table $loci is not signed off (analysis_ready is false for a locus)"
-else
-	loci="$DATA_DIR/loci.tsv"
-	"$PYTHON" -m hbfgwas.loci export --require-analysis-ready --out "$loci" ||
-		die "the locus table is not signed off by the user (python -m hbfgwas.loci check --analysis)"
-fi
-if [ "${HBFGWAS_SKIP_PREREG_CHECK:-0}" = 1 ]; then
-	log "WARNING: HBFGWAS_SKIP_PREREG_CHECK=1; not checking the prereg-v1 tag"
-else
-	git rev-parse -q --verify refs/tags/prereg-v1 >/dev/null ||
-		die "tag prereg-v1 does not exist: real-data criteria must be pre-registered first"
-	git diff --quiet prereg-v1 -- "$CONFIG" ||
-		die "$CONFIG differs from the prereg-v1 tag"
-	[ "$(cfg acceptance.real)" != "null" ] || die "acceptance.real is empty in $CONFIG"
-fi
-
-seed_file="${STEP_E_SEED_FILE:-$(cfg real_data_simulation.seed_file)}"
-"$PYTHON" -m hbfgwas.pipeline seed-child --seed-file "$seed_file" --name phenotype >/dev/null ||
-	die "the step e seed in $seed_file is empty: it is filled only after the prereg-v1 tag"
-[ "$(cfg real_data_simulation.population_shift)" != "null" ] ||
-	die "real_data_simulation.population_shift is not pre-registered in $CONFIG"
+# --- preconditions (scripts/_common.sh) --------------------------------------
+require_step_e_ready
 
 # --- planted variants: sentinels present after QC ----------------------------
 # A sentinel absent from the callset (by rsID and by position) or removed by QC

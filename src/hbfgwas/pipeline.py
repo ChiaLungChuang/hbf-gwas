@@ -596,6 +596,147 @@ def _python_assoc(raw: RawGenotypes, pheno: pd.DataFrame, covar: np.ndarray | No
     return res
 
 
+# --- step e: power redraws at the sentinels, and the sensitivity scan ------------
+
+
+def power_redraws(
+    config: dict,
+    raw: RawGenotypes,
+    smap: pd.DataFrame,
+    psam: pd.DataFrame,
+    eigenvec: pd.DataFrame,
+    seed_file,
+    n_redraws: int | None = None,
+) -> dict:
+    """Empirical power at the planted sentinels over phenotype redraws (step e).
+
+    Each redraw is the step e phenotype model with new noise: the same planted
+    effects on the same genotypes and the same fixed population shift
+    (``real_data_simulation.population_shift``); only the noise is new, drawn
+    from the step e seed's child "power_reps". Every redraw is tested at the
+    sentinels only, with the PCs (the gated power calibration) and without them
+    (reported). The number of redraws is
+    ``acceptance.real.power_calibration.n_redraws`` unless given.
+
+    The conditional power is recomputed from the same genotypes and PCs and
+    reported next to the declared value; it is not a criterion.
+    """
+    from hbfgwas import experiment, predict
+
+    if n_redraws is None:
+        calib = (config["acceptance"].get("real") or {}).get("power_calibration") or {}
+        n_redraws = calib.get("n_redraws")
+    if not n_redraws or int(n_redraws) <= 0:
+        raise ValueError(
+            "the number of redraws is not given and acceptance.real.power_calibration "
+            "has no n_redraws"
+        )
+    n_redraws = int(n_redraws)
+    shift = fixed_population_shift(config)
+    if shift is None:
+        raise ValueError("real_data_simulation.population_shift is not pre-registered")
+    seeds = step_e_seeds(seed_file)
+    geno, betas, meta = effect_allele_dosages(config, raw, smap)
+    pop_col = config["real_data_simulation"]["population_column"]
+    pops = psam.set_index("IID").reindex(raw.iid)[pop_col]
+    if pops.isna().any():
+        raise ValueError("some exported samples have no population label in the .psam")
+    n_pcs = int(config["pca"]["n_pcs"])
+    pcs = (
+        eigenvec.set_index("IID")
+        .reindex(raw.iid)[[f"PC{i}" for i in range(1, n_pcs + 1)]]
+        .to_numpy()
+    )
+    if np.isnan(pcs).any():
+        raise ValueError("some exported samples have no PCs")
+    alpha = config["association"]["genome_wide_alpha"]
+
+    reps = simulate.simulate_phenotype(
+        geno,
+        pops.to_numpy(),
+        rng=np.random.default_rng(seeds["power_reps"]),
+        beta=betas,
+        pop_shift=shift,
+        n_reps=n_redraws,
+    )
+    adj = assoc.linear_assoc(geno, reps.y, pcs)
+    unadj = assoc.linear_assoc(geno, reps.y)
+    hits = (adj.p < alpha).sum(axis=1)
+    hits_u = (unadj.p < alpha).sum(axis=1)
+
+    svec = np.array([float(shift[str(p)]) for p in pops])
+    recomputed = predict.conditional_power(geno, betas, alpha, covariates=pcs, shift=svec)
+    loci = {}
+    for j, m in enumerate(meta):
+        k, ku = int(hits[j]), int(hits_u[j])
+        loci[m["gene"]] = {
+            "hits_pc_adjusted": k,
+            "empirical_power": k / n_redraws,
+            "empirical_power_ci95": experiment._binomial_ci95(k, n_redraws),
+            "hits_unadjusted": ku,
+            "empirical_power_unadjusted": ku / n_redraws,
+            "empirical_power_unadjusted_ci95": experiment._binomial_ci95(ku, n_redraws),
+            "predicted_power_recomputed": float(recomputed[j]["power"]),
+            "effect_allele_freq": float(geno[:, j].mean() / 2),
+            "beta_sd": float(betas[j]),
+        }
+    return {
+        "phenotype": "simulated (hbfgwas.simulate.simulate_phenotype); not a measured trait",
+        "model": "planted effects + fixed population shift + new noise in every redraw",
+        "tested_at": "the planted sentinels only",
+        "n_redraws": n_redraws,
+        "n_samples": int(len(raw.iid)),
+        "alpha": alpha,
+        "step_e_seed": seeds["seed"],
+        "seed_child": "power_reps",
+        "shift_var_realised": float(svec.var()),
+        "loci": loci,
+    }
+
+
+def sensitivity_section(config: dict, data_dir: Path, planted: pd.DataFrame) -> dict:
+    """Results of the sensitivity scan (04c), or a 'not run' note. Never gated."""
+    data_dir = Path(data_dir)
+    files = {
+        "unadjusted": data_dir / "glm_sens_nopc.HBF_SIM.glm.linear",
+        "adjusted": data_dir / "glm_sens_pc.HBF_SIM.glm.linear",
+    }
+    excluded = list((config.get("sensitivity") or {}).get("exclude_samples") or [])
+    if not all(f.exists() for f in files.values()):
+        return {"status": "not run", "gated": False, "excluded_samples": excluded}
+    t1a = config["association"]["type1_alpha"]
+    window = int(config["association"]["null_exclusion_window_bp"])
+    out: dict = {
+        "status": "run",
+        "gated": False,
+        "excluded_samples": excluded,
+        "pcs": "recomputed without the excluded samples (03d_sensitivity_pca.sh)",
+        "phenotype": "the step e phenotype, not redrawn, without the excluded samples",
+    }
+    glm = {side: read_glm(f) for side, f in files.items()}
+    for side, df in glm.items():
+        ok = np.isfinite(df["P"].to_numpy())
+        mask = null_mask(df, planted, window) & ok
+        out[side] = {
+            "lambda_gc": assoc.lambda_gc(df.loc[ok, "P"]),
+            "type1_error": assoc.type1_error(df.loc[mask, "P"], t1a),
+            "type1_alpha": t1a,
+            "n_variants": int(ok.sum()),
+            "n_null_variants": int(mask.sum()),
+        }
+    out["n_samples_analysed"] = (
+        int(np.nanmax(glm["adjusted"]["OBS_CT"])) if len(glm["adjusted"]) else 0
+    )
+    out["loci"] = {}
+    for _, r in planted.iterrows():
+        rows = {side: df[df["ID"] == r["id"]] for side, df in glm.items()}
+        out["loci"][r["gene"]] = {
+            f"p_{side}": float(rows[side]["P"].iloc[0]) if len(rows[side]) else float("nan")
+            for side in glm
+        }
+    return out
+
+
 def build_report(config: dict, data_dir: Path, run_dir: Path, figures: bool = True) -> dict:
     data_dir, run_dir = Path(data_dir), Path(run_dir)
     alpha = config["association"]["genome_wide_alpha"]
@@ -636,6 +777,13 @@ def build_report(config: dict, data_dir: Path, run_dir: Path, figures: bool = Tr
 
     real_criteria = config["acceptance"].get("real") or {}
     declared_power = real_criteria.get("predicted_power", {}) if real_criteria else {}
+    redraws_path = run_dir / "power_redraws.json"
+    redraws = json.loads(redraws_path.read_text()) if redraws_path.exists() else None
+    if real_criteria.get("power_calibration") and redraws is None:
+        raise FileNotFoundError(
+            f"acceptance.real pre-registers a power calibration but {redraws_path} is "
+            "missing (scripts/04b_power_redraws.sh)"
+        )
     effects = {e["locus"]: e for e in config["planted_effects"]}
     h = float(config["real_data_simulation"]["shift_var_fraction"])
     planted_meta = {m["gene"]: m for m in meta["planted"]}
@@ -675,6 +823,17 @@ def build_report(config: dict, data_dir: Path, run_dir: Path, figures: bool = Tr
             p_adjusted=p_adj,
             recovered=bool(np.isfinite(p_adj) and p_adj < alpha),
         )
+        if redraws is not None:
+            if gene not in redraws["loci"]:
+                raise ValueError(f"{gene} is testable but missing from {redraws_path}")
+            rd = redraws["loci"][gene]
+            entry.update(
+                n_redraws=redraws["n_redraws"],
+                empirical_power=rd["empirical_power"],
+                empirical_power_ci95=rd["empirical_power_ci95"],
+                empirical_power_unadjusted=rd["empirical_power_unadjusted"],
+                predicted_power_recomputed=rd["predicted_power_recomputed"],
+            )
         loci.append(entry)
     results["loci_all"] = loci
     results["loci"] = [x for x in loci if "p_adjusted" in x]
@@ -694,6 +853,11 @@ def build_report(config: dict, data_dir: Path, run_dir: Path, figures: bool = Tr
         py.to_csv(run_dir / f"concordance_python_{side}.tsv", sep="\t", index=False)
     conc["passed"] = all(conc[s]["passed"] for s in ("unadjusted", "adjusted"))
     results["concordance"] = conc
+    if redraws is not None:
+        results["power_redraws"] = {
+            k: redraws[k] for k in ("n_redraws", "seed_child", "step_e_seed", "model")
+        }
+    results["sensitivity"] = sensitivity_section(config, data_dir, planted)
 
     if figures:
         _figures(config, data_dir, run_dir, glm, results)
@@ -810,6 +974,16 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--out", required=True)
     p.add_argument("--meta", required=True)
 
+    p = sub.add_parser("power-redraws", help="step e: empirical power at the sentinels")
+    p.add_argument("--config", default=None)
+    p.add_argument("--seed-file", required=True)
+    p.add_argument("--raw", required=True)
+    p.add_argument("--map", required=True)
+    p.add_argument("--psam", required=True)
+    p.add_argument("--eigenvec", required=True)
+    p.add_argument("--n-redraws", type=int, default=None)
+    p.add_argument("--out", required=True)
+
     p = sub.add_parser("het-summary")
     p.add_argument("--het", required=True)
     p.add_argument("--out", required=True)
@@ -910,6 +1084,27 @@ def main(argv: list[str] | None = None) -> int:
             )
         for gene in res["not_testable"]:
             print(f"{gene}: {NOT_TESTABLE}")
+        print(f"wrote {a.out}")
+    elif a.cmd == "power-redraws":
+        config = load_config(a.config)
+        smap = pd.read_csv(a.map, sep="\t", dtype={"id": str, "chrom": str})
+        res = power_redraws(
+            config,
+            read_raw(a.raw),
+            smap,
+            read_psam(a.psam),
+            read_eigenvec(a.eigenvec),
+            a.seed_file,
+            n_redraws=a.n_redraws,
+        )
+        Path(a.out).write_text(json.dumps(res, indent=2, default=float) + "\n")
+        for gene, r in res["loci"].items():
+            lo, hi = r["empirical_power_ci95"]
+            print(
+                f"{gene}: empirical power {r['empirical_power']:.4f} [{lo:.4f}, {hi:.4f}] over "
+                f"{res['n_redraws']} redraws (PC-adjusted); recomputed prediction "
+                f"{r['predicted_power_recomputed']:.4f}"
+            )
         print(f"wrote {a.out}")
     elif a.cmd == "het-summary":
         s = het_summary(read_table(a.het))

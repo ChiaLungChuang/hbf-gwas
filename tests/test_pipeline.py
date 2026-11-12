@@ -253,3 +253,77 @@ def test_step_e_seed_children_are_stable(tmp_path):
     a = [pipeline.seed_child_int(p, n) for n in pipeline.STEP_E_SPAWN]
     assert a == [pipeline.seed_child_int(p, n) for n in pipeline.STEP_E_SPAWN]
     assert len(set(a)) == 3
+
+
+# --- step e: power redraws at the sentinels -----------------------------------------
+
+
+def _eigenvec(iids, seed=1):
+    rng = np.random.default_rng(seed)
+    pcs = rng.standard_normal((len(iids), 10))
+    df = pd.DataFrame(pcs, columns=[f"PC{i}" for i in range(1, 11)])
+    df.insert(0, "IID", iids)
+    return df
+
+
+def _cfg_for_redraws(n_redraws=1000):
+    cfg = _cfg_with_shift()
+    cfg["acceptance"]["real"] = {
+        "power_calibration": {"max_abs_diff": 0.05, "n_redraws": n_redraws}
+    }
+    return cfg
+
+
+def test_power_redraws_match_the_conditional_prediction(tmp_path, pvar, loci, seed_file):
+    path, psam, _ = _raw(tmp_path, n=150, seed=3)
+    raw = pipeline.read_raw(path)
+    smap = pipeline.find_sentinels(pvar, loci)
+    res = pipeline.power_redraws(
+        _cfg_for_redraws(1000), raw, smap, psam, _eigenvec(raw.iid), seed_file
+    )
+    assert res["n_redraws"] == 1000 and res["seed_child"] == "power_reps"
+    assert res["step_e_seed"] == 4242
+    assert set(res["loci"]) == {"BCL11A", "HBS1L-MYB", "HBB cluster"}
+    for gene, r in res["loci"].items():
+        lo, hi = r["empirical_power_ci95"]
+        assert lo <= r["empirical_power"] <= hi
+        # empirical power over redraws agrees with the conditional prediction
+        # (SE <= 0.016 at 1000 redraws)
+        assert abs(r["empirical_power"] - r["predicted_power_recomputed"]) < 0.07, gene
+        assert r["hits_pc_adjusted"] == round(r["empirical_power"] * 1000)
+    again = pipeline.power_redraws(
+        _cfg_for_redraws(1000), raw, smap, psam, _eigenvec(raw.iid), seed_file
+    )
+    assert again == res  # the step e seed fixes every redraw
+
+
+def test_power_redraws_use_their_own_seed_child(tmp_path, pvar, loci, seed_file):
+    path, psam, _ = _raw(tmp_path, n=150, seed=3)
+    raw = pipeline.read_raw(path)
+    smap = pipeline.find_sentinels(pvar, loci)
+    other = tmp_path / "other_seed.yaml"
+    other.write_text("seed: 4243\n")
+    a = pipeline.power_redraws(
+        _cfg_for_redraws(300), raw, smap, psam, _eigenvec(raw.iid), seed_file
+    )
+    b = pipeline.power_redraws(_cfg_for_redraws(300), raw, smap, psam, _eigenvec(raw.iid), other)
+    assert a["loci"] != b["loci"]
+    assert pipeline.seed_child_int(seed_file, "power_reps") != pipeline.seed_child_int(
+        seed_file, "phenotype"
+    )
+
+
+def test_power_redraws_refuse_without_a_count_or_a_declared_shift(tmp_path, pvar, loci, seed_file):
+    path, psam, _ = _raw(tmp_path, n=60)
+    raw = pipeline.read_raw(path)
+    smap = pipeline.find_sentinels(pvar, loci)
+    no_count = _cfg_with_shift()
+    no_count["acceptance"]["real"] = None
+    with pytest.raises(ValueError, match="n_redraws"):
+        pipeline.power_redraws(no_count, raw, smap, psam, _eigenvec(raw.iid), seed_file)
+    import copy
+
+    no_shift = copy.deepcopy(_cfg_for_redraws(10))
+    no_shift["real_data_simulation"]["population_shift"] = None
+    with pytest.raises(ValueError, match="population_shift"):
+        pipeline.power_redraws(no_shift, raw, smap, psam, _eigenvec(raw.iid), seed_file)
