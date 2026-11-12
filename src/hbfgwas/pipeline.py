@@ -466,7 +466,9 @@ def prereg_predictions(
     if np.isnan(pcs).any():
         raise ValueError("some exported samples have no PCs")
     seq = np.random.SeedSequence(int(config["seeds"]["real_prediction"]))
-    power_seed, lambda_seed = seq.spawn(2)
+    # children 0 and 1 are those of the original step d run (spawn(2)); child 2
+    # draws the null-statistic distribution added in the step d amendment
+    power_seed, lambda_seed, null_seed = seq.spawn(3)
     svec = None
     if fixed is not None:
         missing = sorted(set(pops.astype(str)) - set(fixed))
@@ -508,8 +510,15 @@ def prereg_predictions(
             rng=np.random.default_rng(lambda_seed),
             shift=svec,
         )
+    null_dist, pass_prob = None, None
+    if svec is not None:
+        null_dist, pass_prob = _null_distribution_and_pass_probabilities(
+            config, geno, betas, svec, pops.to_numpy(), pcs, null, power_out, null_seed
+        )
     return {
         "computed_before_any_phenotype": True,
+        "null_distribution": null_dist,
+        "pass_probability": pass_prob,
         "n_samples": int(len(raw_sentinels.iid)),
         "excluded_samples": exclude,
         "alpha": alpha,
@@ -526,6 +535,111 @@ def prereg_predictions(
         "predicted_lambda_gc": lam,
         "n_null_variants": int(null.shape[1]),
     }
+
+
+def _null_distribution_and_pass_probabilities(
+    config, geno, betas, svec, pops, pcs, null, power_out, seed
+) -> tuple[dict, dict]:
+    """The step d amendment: predictive distribution of the null statistics, and the
+    probability that a correct pipeline passes each gated criterion.
+
+    The fixed part of the step e phenotype is planted effects + the declared shift;
+    the noise variance is the one simulate_phenotype uses. The noise is projected
+    on the population indicators and the PCs exactly
+    (``predict.predicted_null_distribution``).
+    """
+    from hbfgwas import predict
+
+    pcfg = config["prediction"]
+    betas = np.asarray(betas, dtype=float)
+    noise_var = predict.noise_variance(geno, betas, shift_var_fraction=float(svec.var()))
+    labels = sorted(set(map(str, pops)))
+    indicators = (np.asarray(pops, dtype=str)[:, None] == np.array(labels)[None, :]).astype(float)
+    nd = predict.predicted_null_distribution(
+        null,
+        geno @ betas + svec,
+        noise_var,
+        np.hstack([indicators, pcs]),
+        pcs,
+        n_draws=int(pcfg.get("null_draws", 2000)),
+        rng=np.random.default_rng(seed),
+        n_effective=pcfg.get("n_effective_variants"),
+    )
+    crit = config["acceptance"].get("real") or {}
+    sim = config["acceptance"]["simulated"]
+    adj = crit.get("adjusted_lambda_gc") or sim["adjusted_lambda_gc"]
+    t1b = crit.get("adjusted_type1_error") or sim["adjusted_type1_error"]
+    cal = crit.get("power_calibration") or sim["power_calibration"]
+    n_redraws = int(cal.get("n_redraws", 2000))
+    tol = float(cal["max_abs_diff"])
+    u, a = nd["unadjusted"], nd["pc_adjusted"]
+    lo_u, hi_u = u["lambda_gc"]["q01"], u["lambda_gc"]["q99"]
+
+    probs = {
+        "unadjusted_lambda_gc_in_q01_q99": float(
+            np.mean((u["lambda_obs"] >= lo_u) & (u["lambda_obs"] <= hi_u))
+        ),
+        "adjusted_lambda_gc": predict.prob_in_interval(
+            a["lambda_draws"], a["lambda_sd"], adj.get("at_least"), adj.get("at_most")
+        ),
+        "adjusted_type1_error": predict.prob_in_interval(
+            a["type1_draws"], a["type1_sd"], t1b.get("at_least"), t1b.get("at_most")
+        ),
+    }
+    joint_null = float(
+        np.mean(
+            (u["lambda_obs"] >= lo_u)
+            & (u["lambda_obs"] <= hi_u)
+            & (a["lambda_obs"] >= adj["at_least"])
+            & (a["lambda_obs"] <= adj["at_most"])
+            & (a["type1_obs"] >= t1b["at_least"])
+            & (a["type1_obs"] <= t1b["at_most"])
+        )
+    )
+    calib = {}
+    model_err = float(pcfg.get("power_model_error", 0.013))
+    for gene, pw in power_out.items():
+        pred = round(float(pw["pc_adjusted"]["power"]), 4)
+        worst = min(
+            predict.prob_calibration_passes(min(max(pred + d, 0.0), 1.0), pred, n_redraws, tol)
+            for d in np.linspace(-model_err, model_err, 27)
+        )
+        calib[gene] = {
+            "predicted_power": pred,
+            "if_prediction_exact": predict.prob_calibration_passes(pred, pred, n_redraws, tol),
+            f"worst_if_true_power_within_{model_err}": worst,
+        }
+    joint = joint_null
+    for c in calib.values():
+        joint *= c["if_prediction_exact"]
+    pass_prob = {
+        "per_criterion": probs,
+        "power_calibration": calib,
+        "all_gated_criteria": joint,
+        "bounds_used": {
+            "unadjusted_lambda_gc": {"at_least": lo_u, "at_most": hi_u},
+            "adjusted_lambda_gc": adj,
+            "adjusted_type1_error": t1b,
+            "power_calibration": {"max_abs_diff": tol, "n_redraws": n_redraws},
+        },
+        "method": (
+            "lambda and type I: the predictive distribution of the observed statistics "
+            "(predict.predicted_null_distribution); power calibration: Binomial(n_redraws, "
+            "p) with p the conditional prediction, and the worst case with the true power "
+            "off by up to power_model_error (the largest gap seen in sim-v2 and sim-v3)"
+        ),
+    }
+    summary = {k: v for k, v in nd.items() if k not in ("unadjusted", "pc_adjusted")} | {
+        side: {
+            "lambda_gc": nd[side]["lambda_gc"],
+            "type1_error": nd[side]["type1_error"],
+            "bootstrap_sd": nd[side]["bootstrap_sd"],
+            "lambda_estimation_sd_median": float(np.median(nd[side]["lambda_sd"])),
+            "lambda_without_estimation_noise": predict._quantile_summary(nd[side]["lambda_draws"]),
+        }
+        for side in ("unadjusted", "pc_adjusted")
+    }
+    return summary, pass_prob
 
 
 def write_pheno(df: pd.DataFrame, path) -> None:
@@ -1086,6 +1200,19 @@ def main(argv: list[str] | None = None) -> int:
             )
         for gene in res["not_testable"]:
             print(f"{gene}: {NOT_TESTABLE}")
+        if res.get("null_distribution"):
+            nd, pp = res["null_distribution"], res["pass_probability"]
+            for side in ("unadjusted", "pc_adjusted"):
+                x = nd[side]["lambda_gc"]
+                print(
+                    f"observed lambda_GC {side}, predictive: median {x['median']:.4f}, "
+                    f"1st-99th [{x['q01']:.4f}, {x['q99']:.4f}]"
+                )
+            for k, v in pp["per_criterion"].items():
+                print(f"P(pass) {k}: {v:.4f}")
+            for gene, c in pp["power_calibration"].items():
+                print(f"P(pass) power calibration {gene}: {c['if_prediction_exact']:.6f}")
+            print(f"P(pass) all gated criteria: {pp['all_gated_criteria']:.4f}")
         print(f"wrote {a.out}")
     elif a.cmd == "power-redraws":
         config = load_config(a.config)
