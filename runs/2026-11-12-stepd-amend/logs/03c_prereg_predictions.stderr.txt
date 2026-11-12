@@ -1,0 +1,3 @@
+[23:01:12] plink2: PLINK v2.0.0-b.1.4 M1 (7 Nov 2026) (pinned v2.0.0-b.1.4, 7 Nov 2026)
+[23:03:09] predictions (no phenotype drawn): runs/2026-11-12-stepd-amend/prereg_predictions.json
+[23:04:32] sensitivity predictions without NA20314: runs/2026-11-12-stepd-amend/prereg_predictions_sensitivity.json

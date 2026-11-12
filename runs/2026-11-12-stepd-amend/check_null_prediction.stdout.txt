@@ -1,0 +1,4 @@
+unadjusted: predicted lambda q01-q99 [1.2715, 1.5432], observed inside 0.993 (q05-q95: 0.947; below median 0.601)
+pc_adjusted: predicted lambda q01-q99 [0.9802, 1.0246], observed inside 0.983 (q05-q95: 0.895; below median 0.488)
+wrote runs/2026-11-12-stepd-amend/null_prediction_check_simulated.json (72.7 s)
+exit 0

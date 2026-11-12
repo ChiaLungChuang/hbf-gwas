@@ -147,6 +147,19 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   declared first), empty step e seed slot (`config/step_e_seed.yaml`), NA20314
   sensitivity PCA (`03d`) and predictions, real-data criteria real-v1 in
   `acceptance.real`; predictions in `runs/2026-11-12-stepd/` (no phenotype).
+- Step d amendment (2026-11-12, the user's decisions, before any real-data
+  phenotype existed; D-048 to D-050):
+  - "unadjusted lambda_GC > 1.2" is replaced by the pre-stated 1st-99th
+    percentile prediction interval [1.1248, 1.2875];
+  - every gated criterion has a pass probability (all together 0.98; the
+    interval criterion 0.98, flagged below 0.99);
+  - BCL11A stays reported, not gated.
+
+  New `predict.predicted_null_distribution`, with the pass probabilities in
+  `pipeline.prereg_predictions`. Predictions were rerun on the real genotypes
+  in `runs/2026-11-12-stepd-amend/` (no phenotype; logs redacted).
+  `scripts/check_null_prediction.py` checks the prediction on simulated
+  genotypes. The original step d records are unchanged.
 
 ### Repository and CI
 - CI minutes (2026-11-12, the user's request after the monthly limit was

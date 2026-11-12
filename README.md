@@ -48,8 +48,8 @@ column changes only when the pipeline has actually been run on 1000 Genomes.
 | `02_qc.sh` per-filter QC table, sentinel report | synthetic fileset, in CI | **ran 2026-11-11**: 14,698,808 variants after QC; BCL11A and HBS1L-MYB testable, HBB cluster not testable in this callset (rs7482144 absent from 1000 Genomes phase 3) |
 | `03_pca.sh` long-range LD exclusion, pruning, KING, exact PCA, het | synthetic fileset, in CI | **ran 2026-11-11**: 215,522 pruned variants, KING removed 0, 10 PCs |
 | `03b_pc_plot.py` PC1 vs PC2 by the seven AFR populations | synthetic fileset, in CI | **ran 2026-11-11** ([plot](runs/2026-11-11/pc1_pc2_by_population.png)) |
-| `03c_prereg_predictions.sh` predicted lambda_GC and conditional power, before any phenotype | synthetic fileset, in CI | its real run is in the step d PR (not yet merged) |
-| `03d_sensitivity_pca.sh` PCA without NA20314 (sensitivity, never gated) | synthetic fileset, in CI | its real run is in the step d PR (not yet merged) |
+| `03c_prereg_predictions.sh` predicted lambda_GC and conditional power, before any phenotype | synthetic fileset, in CI | **ran 2026-11-12** (step d, no phenotype drawn; [run](runs/2026-11-12-stepd/README.md)), and again for the amendment the user made before any phenotype existed ([run](runs/2026-11-12-stepd-amend/README.md)); the criteria are **proposed**, approval pending |
+| `03d_sensitivity_pca.sh` PCA without NA20314 (sensitivity, never gated) | synthetic fileset, in CI | **ran 2026-11-12** (step d) |
 | `scripts/step_e.sh`: the single step e command (refusal checks, then 04, 04b, 04c, 05 and the gate) | synthetic fileset, in CI | not yet run |
 | `04_assoc.sh` simulated phenotype on the genotypes, plink2 `--glm` ± PCs | synthetic fileset, in CI | not yet run |
 | `04b_power_redraws.sh` 2000 phenotype redraws at the sentinels (power calibration) | synthetic fileset, in CI | not yet run |
@@ -71,9 +71,14 @@ version's seed is pre-registered.
 | sim-v2 | after the Phase 1 review (#10): power predicted conditional on the realised genotypes; 2000 redraws; a proposed 0.05 calibration criterion. Claude also switched to planting the table's per-allele effect (D-022), which made HBS1L-MYB REQUIRED at predicted power 0.809 | `df3b117` | **failed**: power calibration agreed at all loci (within 0.011), but HBS1L-MYB, REQUIRED at 0.809, was missed in the single scan (p = 1.2e-6 > 5e-8) ([run](runs/2026-11-10-sim-v2/README.md), #14) |
 | sim-v3 | criteria amended **after the failed sim-v2 result** (#14, D-024): a single scan is one Bernoulli draw per locus, and a "required at 0.8" rule fails a correct pipeline about 19% of the time at power 0.81. Gated: lambda_GC and type I error as before; \|empirical - predicted\| power <= 0.05 per locus over 2000 redraws; a locus with conditional predicted power >= 0.99 must reach p < 5e-8 in the single scan. Every other locus's single-scan hit or miss is reported next to its predicted power, not gated | criteria #17 (on `main` via #18); seed `c2ca787` and predictions `88d4530`, each pushed before the run | **passed**: lambda_GC 1.342 → 0.998, type I error 0.0505, BCL11A (0.996, required) hit at p = 3.4e-9, calibration within 0.013 at every locus ([run](runs/2026-11-11-sim-v3/README.md)) |
 
-The real-data pre-registration (Phase 2 step d) uses the sim-v3 rule. Its
-criteria (**real-v1**) are proposed in the step d PR. They take effect only
-when the user merges that PR and its merge commit is tagged `prereg-v1`.
+The real-data pre-registration (Phase 2 step d) uses the sim-v3 rule, with
+one change the user made before any real-data phenotype existed. The
+unadjusted lambda_GC must lie inside its pre-stated 1st-99th percentile
+prediction interval, [1.1248, 1.2875], instead of exceeding 1.2. Its criteria
+(**real-v1**) are proposed in `config/analysis.yaml` `acceptance.real`, each
+with the probability that a correct pipeline passes it (0.98 for all
+together). They take effect only when the user merges them and the merge
+commit is tagged `prereg-v1`.
 
 The figure below is from **sim-v3**, the current criteria version.
 

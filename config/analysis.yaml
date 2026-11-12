@@ -199,6 +199,17 @@ prediction:
   n_null_variants: 20000
   power_shift_draws: 2000
   lambda_shift_draws: 200
+  # Step d amendment (2026-11-12, before any real-data phenotype): predictive
+  # distribution of the observed lambda_GC and type I error
+  # (predict.predicted_null_distribution), from which the unadjusted lambda_GC
+  # criterion (1st-99th percentile) and every pass probability are computed.
+  null_draws: 2000 # draws of the noise's projection on the population indicators and PCs
+  # effective number of independent variants behind the observed median / fraction:
+  # the 215,522 LD-pruned variants of the step c PCA (runs/2026-11-11/03_pca_counts.tsv)
+  n_effective_variants: 215522
+  # largest |empirical - predicted| power seen in sim-v2 and sim-v3 (docs/power.md
+  # section 4), used for the worst-case calibration pass probability
+  power_model_error: 0.013
 
 # --- real-genotype phenotype simulation (scripts/04_assoc.sh) ------------------
 # Provisional: confirmed or revised in the Phase 2 step d pre-registration
@@ -264,13 +275,18 @@ acceptance:
   # above, before any phenotype was drawn (runs/2026-11-12-stepd/).
   real:
     criteria_version: real-v1
-    rule: sim-v3 (docs/decisions.md D-024)
+    rule: sim-v3 (docs/decisions.md D-024), unadjusted lambda_GC criterion amended (D-048)
+    # AMENDED 2026-11-12, by the user, before any real-data phenotype existed
+    # (D-048 to D-050; predictions in runs/2026-11-12-stepd-amend/).
     n_samples: 652
-    # Gated, as in sim-v3. NOTE: the predicted unadjusted lambda_GC is 1.1999
-    # [1.1449, 1.2703] (median and 5th-95th percentile), i.e. about even odds of
-    # exceeding 1.2. Flagged for the user; not changed.
-    unadjusted_lambda_gc: {greater_than: 1.2}
-    adjusted_lambda_gc: {at_least: 0.97, at_most: 1.05} # predicted 1.0045 [1.0028, 1.0066]
+    # Gated (D-048): the observed unadjusted lambda_GC must lie inside the
+    # pre-stated 1st-99th percentile prediction interval of the observed value,
+    # [1.124814, 1.287446] (predict.predicted_null_distribution), rounded outward.
+    # It replaces "> 1.2", which the prediction (median 1.2001) made about even
+    # odds. A correct pipeline passes with probability 0.98 by construction:
+    # BELOW 0.99, flagged (pass_probability below).
+    unadjusted_lambda_gc: {at_least: 1.1248, at_most: 1.2875}
+    adjusted_lambda_gc: {at_least: 0.97, at_most: 1.05} # predicted 1.0094 [0.9966, 1.0226], 1st-99th
     adjusted_type1_error: {alpha: 0.05, at_least: 0.04, at_most: 0.06}
     # Gated: per testable locus, |empirical power over n_redraws phenotype redraws
     # on the real genotypes - predicted_power| <= max_abs_diff
@@ -283,10 +299,29 @@ acceptance:
       HBS1L-MYB: 0.1694
     required_loci: []
     not_testable: [HBB cluster] # rs7482144 absent from the 1000 Genomes phase 3 callset (D-028)
-    # Informational, not gated:
+    # Informational, not gated. Predictive distribution of the OBSERVED statistics
+    # (D-049: noise projected exactly on the population indicators and the 10 PCs,
+    # 2000 draws; estimation noise from 215,522 effective variants and a variant
+    # bootstrap). The original step d values (median 1.1999 [1.1449, 1.2703]
+    # unadjusted, 1.0045 [1.0028, 1.0066] adjusted, 5th-95th) used the older
+    # method and are kept in runs/2026-11-12-stepd/.
     predicted_lambda_gc:
-      unadjusted: {median: 1.1999, q05: 1.1449, q95: 1.2703}
-      pc_adjusted: {median: 1.0045, q05: 1.0028, q95: 1.0066}
+      unadjusted: {median: 1.2001, q01: 1.1248, q05: 1.1459, q95: 1.2630, q99: 1.2874}
+      pc_adjusted: {median: 1.0094, q01: 0.9966, q05: 1.0001, q95: 1.0186, q99: 1.0226}
+    predicted_type1_error:
+      unadjusted: {median: 0.0736, q01: 0.0644, q99: 0.0848}
+      pc_adjusted: {median: 0.0511, q01: 0.0498, q99: 0.0523}
+    # Probability that a CORRECT pipeline passes each gated criterion (D-049),
+    # computed from the same predictive distribution (lambda, type I) and from
+    # Binomial(2000, predicted power) (calibration). Flag any below 0.99.
+    pass_probability:
+      unadjusted_lambda_gc: 0.98 # by construction of a 1st-99th interval; BELOW 0.99
+      adjusted_lambda_gc: 1.0000 # 1 - 2.6e-12
+      adjusted_type1_error: 1.0000 # 1 to double precision
+      power_calibration_BCL11A: 1.0000 # 1 - 1e-15 or closer; also with the true power off by 0.013
+      power_calibration_HBS1L-MYB: 1.0000 # 1 - 4.8e-9; 0.99998 if the true power is off by 0.013
+      all_gated_criteria: 0.98
+      below_0_99: [unadjusted_lambda_gc]
     predicted_power_unadjusted: {BCL11A: 0.9931, HBS1L-MYB: 0.0262}
     # hbfgwas.power (the brief's step d formula: noncentral chi-square, n = 652,
     # measured frequency, partial R2 with the 0.2 shift removed), for reference only
@@ -295,7 +330,9 @@ acceptance:
     sensitivity:
       n_samples: 651
       predicted_power: {BCL11A: 0.9897, HBS1L-MYB: 0.1645}
+      # predictive distribution of the observed values, as for the primary analysis
+      # (D-049); the original step d values (older method) are in runs/2026-11-12-stepd/
       predicted_lambda_gc:
-        unadjusted: {median: 1.1984, q05: 1.1444, q95: 1.2690}
-        pc_adjusted: {median: 1.0045, q05: 1.0028, q95: 1.0063}
+        unadjusted: {median: 1.1989, q01: 1.1240, q05: 1.1435, q95: 1.2647, q99: 1.2919}
+        pc_adjusted: {median: 1.0091, q01: 0.9962, q05: 0.9998, q95: 1.0186, q99: 1.0225}
 

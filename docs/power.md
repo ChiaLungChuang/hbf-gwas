@@ -183,3 +183,37 @@ On real data, `scripts/03c_prereg_predictions.sh` computes the same
 quantities from the real genotypes and PCs, together with the conditional
 power of each testable sentinel, for the Phase 2 step d pre-registration.
 
+
+## 7. The step d amendment: the predictive distribution of the observed statistics
+
+Added on 2026-11-12, before any real-data phenotype existed, when the user
+replaced "unadjusted lambda_GC > 1.2" with an interval and asked for each
+gated criterion's pass probability (D-048, D-049).
+`hbfgwas.predict.predicted_null_distribution` predicts the **observed**
+lambda_GC and type I error, not only their central value.
+
+* **The fixed and the random parts.** The step e phenotype is
+  y = f + e. f, planted effects plus the declared shift, is fixed once the
+  genotypes are. e ~ N(0, sigma_e^2) is the only random part.
+* **The structured noise is drawn exactly.** e is split into its projection
+  on the population indicators and the 10 PCs, drawn in each of 2000 draws,
+  and the rest. In each draw every null variant's t statistic is
+  N(delta_j, tau^2), with delta_j computed from the realised genotypes and
+  f + the drawn projection, as in section 6. lambda is the mixture median /
+  0.4549; the type I error is the mean of P(|t| > 1.96).
+* **Estimation noise is added.** The observed median over M_eff
+  effectively independent variants has SD 2.333 lambda / sqrt(M_eff), with
+  M_eff = 215,522 (the LD-pruned variants of step c). The observed type I
+  fraction has SD sqrt(t1 (1 - t1) / M_eff). Using a 20,000-variant sample
+  adds a bootstrap SD.
+* **Pass probabilities:**
+  - an interval criterion on lambda or type I: the average over draws of
+    P(draw + estimation noise inside it);
+  - the power calibration: Binomial(2000, predicted power), and the worst
+    case with the true power off by up to 0.013.
+
+The numbers and a check on simulated genotypes are in
+`runs/2026-11-12-stepd-amend/README.md`. In that check the PC-adjusted
+predictions were well calibrated. The unadjusted ones covered the observed
+value slightly more often than nominal: 0.993 inside the 1st-99th
+percentile.

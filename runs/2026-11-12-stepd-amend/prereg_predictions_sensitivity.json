@@ -1,0 +1,237 @@
+{
+  "computed_before_any_phenotype": true,
+  "null_distribution": {
+    "n_draws": 2000,
+    "n_null_variants": 20000,
+    "n_effective": 215522,
+    "noise_var": 0.6996949663675608,
+    "fixed_var": 0.30477365664625583,
+    "structure_dim": 17,
+    "type1_alpha": 0.05,
+    "unadjusted": {
+      "lambda_gc": {
+        "q01": 1.1240474836369665,
+        "q05": 1.1434516281567946,
+        "median": 1.1989158492282148,
+        "q95": 1.2646588058127983,
+        "q99": 1.2918611980165937,
+        "mean": 1.2008873394350212
+      },
+      "type1_error": {
+        "q01": 0.06490468183834344,
+        "q05": 0.0669513791858041,
+        "median": 0.07337800634147525,
+        "q95": 0.08157726924405871,
+        "q99": 0.08497093054261312,
+        "mean": 0.07369521300513711
+      },
+      "bootstrap_sd": {
+        "lambda": 0.004490127680459595,
+        "type1": 0.0005556505026690196
+      },
+      "lambda_estimation_sd_median": 0.007513195772548096,
+      "lambda_without_estimation_noise": {
+        "q01": 1.1279592837430146,
+        "q05": 1.1456439956479876,
+        "median": 1.1988028045264165,
+        "q95": 1.2631954167759767,
+        "q99": 1.2920138542381832,
+        "mean": 1.2006639671216366
+      }
+    },
+    "pc_adjusted": {
+      "lambda_gc": {
+        "q01": 0.9961569850194999,
+        "q05": 0.999803047050393,
+        "median": 1.0090836830777823,
+        "q95": 1.0185953526204363,
+        "q99": 1.0224912515659372,
+        "mean": 1.0090811944812275
+      },
+      "type1_error": {
+        "q01": 0.049785352769054145,
+        "q05": 0.05015624084553709,
+        "median": 0.05102434043182806,
+        "q95": 0.05195523835709345,
+        "q99": 0.05237442095965314,
+        "mean": 0.05103535466188593
+      },
+      "bootstrap_sd": {
+        "lambda": 0.002008733173840338,
+        "type1": 0.0002098948912165971
+      },
+      "lambda_estimation_sd_median": 0.005452330265483283,
+      "lambda_without_estimation_noise": {
+        "q01": 1.0056355231590908,
+        "q05": 1.0065204768318494,
+        "median": 1.008740745860617,
+        "q95": 1.0118246269283824,
+        "q99": 1.0131047506244508,
+        "mean": 1.008921262224461
+      }
+    }
+  },
+  "pass_probability": {
+    "per_criterion": {
+      "unadjusted_lambda_gc_in_q01_q99": 0.98,
+      "adjusted_lambda_gc": 0.9999999999971042,
+      "adjusted_type1_error": 1.0
+    },
+    "power_calibration": {
+      "BCL11A": {
+        "predicted_power": 0.9897,
+        "if_prediction_exact": 1.0,
+        "worst_if_true_power_within_0.013": 1.0
+      },
+      "HBS1L-MYB": {
+        "predicted_power": 0.1645,
+        "if_prediction_exact": 0.9999999974286036,
+        "worst_if_true_power_within_0.013": 0.99998962815946
+      }
+    },
+    "all_gated_criteria": 0.9799999974800315,
+    "bounds_used": {
+      "unadjusted_lambda_gc": {
+        "at_least": 1.1240474836369665,
+        "at_most": 1.2918611980165937
+      },
+      "adjusted_lambda_gc": {
+        "at_least": 0.97,
+        "at_most": 1.05
+      },
+      "adjusted_type1_error": {
+        "alpha": 0.05,
+        "at_least": 0.04,
+        "at_most": 0.06
+      },
+      "power_calibration": {
+        "max_abs_diff": 0.05,
+        "n_redraws": 2000
+      }
+    },
+    "method": "lambda and type I: the predictive distribution of the observed statistics (predict.predicted_null_distribution); power calibration: Binomial(n_redraws, p) with p the conditional prediction, and the worst case with the true power off by up to power_model_error (the largest gap seen in sim-v2 and sim-v3)"
+  },
+  "n_samples": 651,
+  "excluded_samples": [
+    "NA20314"
+  ],
+  "alpha": 5e-08,
+  "shift_mode": "fixed",
+  "population_shift": {
+    "ACB": 0.646472,
+    "ASW": -0.391917,
+    "ESN": 0.06668,
+    "GWD": -0.391551,
+    "LWK": -0.559369,
+    "MSL": 0.633422,
+    "YRI": -0.016644
+  },
+  "shift_var_realised": 0.20007086142216898,
+  "population_counts": {
+    "ACB": 95,
+    "ASW": 54,
+    "ESN": 99,
+    "GWD": 113,
+    "LWK": 97,
+    "MSL": 85,
+    "YRI": 108
+  },
+  "shift_var_fraction": 0.2,
+  "required_if_predicted_power_at_least": 0.99,
+  "conditional_power": {
+    "BCL11A": {
+      "pc_adjusted": {
+        "power": 0.989702093783392,
+        "power_mc_se": 0.0,
+        "beta": 0.456435,
+        "expected_beta": 0.46077168235230187,
+        "leakage": 0.0043366823523018905,
+        "genotype_variance_kept": 0.9490964914785506,
+        "mean_noncentrality": 8.165002269333353,
+        "mean_effective_critical_t": 5.821396083390708,
+        "noise_var": 0.6996949663675608,
+        "df": 639,
+        "critical_t": 5.517507518858032,
+        "n_shift_draws": 0,
+        "shift_mode": "fixed"
+      },
+      "unadjusted": {
+        "power": 0.9933351374168297,
+        "power_mc_se": 0.0,
+        "beta": 0.456435,
+        "expected_beta": 0.4604540007269826,
+        "leakage": 0.0040190007269826356,
+        "genotype_variance_kept": 1.0000000000000016,
+        "mean_noncentrality": 8.83998766652069,
+        "mean_effective_critical_t": 6.329575458611483,
+        "noise_var": 0.6996949663675608,
+        "df": 649,
+        "critical_t": 5.51647704931512,
+        "n_shift_draws": 0,
+        "shift_mode": "fixed"
+      },
+      "effect_allele_freq": 0.23886328725038403,
+      "required": false
+    },
+    "HBS1L-MYB": {
+      "pc_adjusted": {
+        "power": 0.16445503254545557,
+        "power_mc_se": 0.0,
+        "beta": 0.571,
+        "expected_beta": 0.587164394990075,
+        "leakage": 0.01616439499007505,
+        "genotype_variance_kept": 0.9653861813124089,
+        "mean_noncentrality": 4.9973173681558105,
+        "mean_effective_critical_t": 5.9895758629317,
+        "noise_var": 0.6996949663675608,
+        "df": 639,
+        "critical_t": 5.517507518858032,
+        "n_shift_draws": 0,
+        "shift_mode": "fixed"
+      },
+      "unadjusted": {
+        "power": 0.026022386727994985,
+        "power_mc_se": 0.0,
+        "beta": 0.571,
+        "expected_beta": 0.5862373918563093,
+        "leakage": 0.015237391856309346,
+        "genotype_variance_kept": 1.0000000000000016,
+        "mean_noncentrality": 4.561576511031802,
+        "mean_effective_critical_t": 6.538506573713266,
+        "noise_var": 0.6996949663675608,
+        "df": 649,
+        "critical_t": 5.51647704931512,
+        "n_shift_draws": 0,
+        "shift_mode": "fixed"
+      },
+      "effect_allele_freq": 0.03917050691244239,
+      "required": false
+    }
+  },
+  "not_testable": [
+    "HBB cluster"
+  ],
+  "predicted_lambda_gc": {
+    "unadjusted": {
+      "median": 1.1984162458946788,
+      "q05": 1.144377704539544,
+      "q95": 1.2690195216592417,
+      "mean": 1.2000497366364757,
+      "n_variants": 20000,
+      "n_shift_draws": 200,
+      "shift_mode": "fixed",
+      "note": "q05-q95 reflect the random shift and noise means only; estimating lambda_GC as a median over M independent variants adds an SD of about 2.333 * lambda / sqrt(M) (lambda_sampling_sd)"
+    },
+    "pc_adjusted": {
+      "median": 1.0044590103911832,
+      "q05": 1.0028292818100752,
+      "q95": 1.00626565493045,
+      "mean": 1.0045129554904422,
+      "n_variants": 20000,
+      "n_shift_draws": 200,
+      "shift_mode": "fixed",
+      "note": "q05-q95 reflect the random shift and noise means only; estimating lambda_GC as a median over M independent variants adds an SD of about 2.333 * lambda / sqrt(M) (lambda_sampling_sd)"
+    }
+  },
+  "n_null_variants": 20000
+}
