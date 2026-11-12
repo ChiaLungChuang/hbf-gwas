@@ -209,7 +209,19 @@ real_data_simulation:
   # Step d: the EXACT non-genetic shift per population, in SD units of the
   # simulated phenotype, identical in the genome-wide scan and in every
   # redraw (no random shift on real genotypes). null until pre-registered.
-  population_shift: null
+  # Drawn once from seeds.real_shift_draw (commit f0c9a5f, pushed first): N(0,1)
+  # per population in alphabetical order (raw draws ACB 1.370097, ASW -1.322758,
+  # ESN -0.133478, GWD -1.321810, LWK -1.757012, MSL 1.336254, YRI -0.349562),
+  # centred and scaled over the 652 samples' labels (ACB 95, ASW 55, ESN 99,
+  # GWD 113, LWK 97, MSL 85, YRI 108) to mean 0, variance 0.200000.
+  population_shift:
+    ACB: 0.646472
+    ASW: -0.391917
+    ESN: 0.06668
+    GWD: -0.391551
+    LWK: -0.559369
+    MSL: 0.633422
+    YRI: -0.016644
   effects: planted_effects # beta_sd per HbF-increasing allele, as above
   # Step e randomness (scan noise, 2000 power redraws, concordance sample) comes
   # from ONE seed in this file, kept outside analysis.yaml so it can be filled
