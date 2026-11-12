@@ -12,7 +12,7 @@
 #                             (synthetic test fileset); it must still be analysis_ready
 #
 # In:  DATA_DIR/afr_qc.*, DATA_DIR/unrelated.id, DATA_DIR/pca.eigenvec
-# Out: RUN_DIR/prereg_predictions.json, RUN_DIR/prereg_sentinels.tsv, logs/
+# Out: RUN_DIR/prereg_predictions.json (+ _sensitivity.json), prereg_sentinels.tsv, logs/
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 # shellcheck source=scripts/_common.sh
@@ -56,3 +56,17 @@ save_log "$DATA_DIR/prereg_null"
 	--raw-null "$DATA_DIR/prereg_null.raw" --psam "$in.psam" --eigenvec "$DATA_DIR/pca.eigenvec" \
 	--out "$RUN_DIR/prereg_predictions.json"
 log "predictions (no phenotype drawn): $RUN_DIR/prereg_predictions.json"
+
+# NA20314 sensitivity analysis (not gated): the same predictions without the
+# excluded samples, with the PCs that 03d_sensitivity_pca.sh recomputed.
+excl=$("$PYTHON" -c 'import json,sys; print(",".join(json.loads(sys.argv[1]) or []))' \
+	"$(cfg sensitivity.exclude_samples)")
+if [ -n "$excl" ]; then
+	[ -s "$DATA_DIR/pca_sens.eigenvec" ] || die "run scripts/03d_sensitivity_pca.sh first"
+	"$PYTHON" -m hbfgwas.pipeline predictions --config "$CONFIG" \
+		--raw-sentinels "$DATA_DIR/prereg_sentinels.raw" --map "$DATA_DIR/prereg_map.tsv" \
+		--raw-null "$DATA_DIR/prereg_null.raw" --psam "$in.psam" \
+		--eigenvec "$DATA_DIR/pca_sens.eigenvec" --exclude "$excl" \
+		--out "$RUN_DIR/prereg_predictions_sensitivity.json"
+	log "sensitivity predictions without $excl: $RUN_DIR/prereg_predictions_sensitivity.json"
+fi

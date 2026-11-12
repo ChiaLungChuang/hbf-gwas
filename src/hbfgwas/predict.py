@@ -68,11 +68,14 @@ def conditional_power(
     noise_var: float | None = None,
     n_shift_draws: int = 2000,
     rng: np.random.Generator | None = None,
+    shift=None,
 ) -> list[dict]:
     """Power of the 1-df additive t-test at each planted variant, given the genotypes.
 
     ``genotypes`` (n, k) are counts of each planted variant's effect allele,
-    ``betas`` (k,) their per-allele effects in phenotype SD units.
+    ``betas`` (k,) their per-allele effects in phenotype SD units. ``shift``
+    (n,) is an exact, fixed shift (pre-registered on real genotypes); then
+    nothing is averaged and ``pop``/``shift_var_fraction`` are not used.
     """
     g = np.asarray(genotypes, dtype=float)
     if g.ndim == 1:
@@ -81,7 +84,8 @@ def conditional_power(
     n, k = g.shape
     if betas.shape != (k,):
         raise ValueError("one beta per planted variant")
-    h = float(shift_var_fraction)
+    fixed = None if shift is None else np.asarray(shift, dtype=float)
+    h = float(fixed.var()) if fixed is not None else float(shift_var_fraction)
     if noise_var is None:
         noise_var = noise_variance(g, betas, h)
     if noise_var <= 0:
@@ -93,7 +97,11 @@ def conditional_power(
     g_r = g - q @ (q.T @ g)
     gen = g @ betas
     gen_r = gen - q @ (q.T @ gen)
-    if h > 0:
+    if fixed is not None:
+        if fixed.shape != (n,):
+            raise ValueError("shift needs one value per individual")
+        s_r = (fixed - q @ (q.T @ fixed))[:, None]
+    elif h > 0:
         if pop is None:
             raise ValueError("a shift needs subpopulation labels")
         rng = rng if rng is not None else np.random.default_rng(0)
@@ -139,7 +147,8 @@ def conditional_power(
                 "noise_var": float(noise_var),
                 "df": int(df),
                 "critical_t": crit,
-                "n_shift_draws": int(s_r.shape[1]) if h > 0 else 0,
+                "n_shift_draws": 0 if (fixed is not None or h == 0) else int(s_r.shape[1]),
+                "shift_mode": "fixed" if fixed is not None else ("random" if h > 0 else "none"),
             }
         )
     return out
@@ -229,6 +238,7 @@ def predicted_lambda(
     rng: np.random.Generator | None = None,
     phenotype_var: float = 1.0,
     noise_var: float | None = None,
+    shift=None,
 ) -> dict:
     """Predicted lambda_GC from genotypes alone, before any phenotype is drawn.
 
@@ -247,9 +257,15 @@ def predicted_lambda(
     """
     rng = rng if rng is not None else np.random.default_rng(0)
     pop = np.asarray(pop)
+    fixed = None if shift is None else np.asarray(shift, dtype=float)
+    if fixed is not None:
+        shift_var_fraction = float(fixed.var())
     if noise_var is None:
         noise_var = phenotype_var - shift_var_fraction
-    shifts = shift_vectors(pop, shift_var_fraction, n_shift_draws, rng)
+    if fixed is not None:  # exact, pre-registered shift: only the noise means vary
+        shifts = np.repeat(fixed[:, None], n_shift_draws, axis=1)
+    else:
+        shifts = shift_vectors(pop, shift_var_fraction, n_shift_draws, rng)
     labels, idx = np.unique(pop, return_inverse=True)
     nk = np.bincount(idx).astype(float)
     noise_means = rng.standard_normal((n_shift_draws, labels.size)) * np.sqrt(noise_var / nk)
@@ -264,6 +280,7 @@ def predicted_lambda(
         "mean": float(lam.mean()),
         "n_variants": n_var,
         "n_shift_draws": int(n_shift_draws),
+        "shift_mode": "fixed" if fixed is not None else "random",
         "note": (
             "q05-q95 reflect the random shift and noise means only; estimating lambda_GC "
             "as a median over M independent variants adds an SD of about "

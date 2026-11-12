@@ -263,6 +263,42 @@ def sample_ids(
     return chosen
 
 
+# --- step e seed and the fixed population shift ------------------------------------
+
+# One step e seed (config/step_e_seed.yaml) is spawned, in this order, into:
+STEP_E_SPAWN = ("phenotype", "power_reps", "concordance")
+
+
+def read_step_e_seed(path) -> int | None:
+    import yaml
+
+    with open(path) as fh:
+        value = (yaml.safe_load(fh) or {}).get("seed")
+    return None if value is None else int(value)
+
+
+def step_e_seeds(path) -> dict:
+    seed = read_step_e_seed(path)
+    if seed is None:
+        raise ValueError(
+            f"{path}: the step e seed is empty; it is pre-registered only after the "
+            "step d pre-registration is merged and tagged prereg-v1"
+        )
+    children = np.random.SeedSequence(seed).spawn(len(STEP_E_SPAWN))
+    return {"seed": seed, **dict(zip(STEP_E_SPAWN, children, strict=True))}
+
+
+def seed_child_int(path, name: str) -> int:
+    """A plain integer seed from a spawned child (for tools that take an int)."""
+    return int(step_e_seeds(path)[name].generate_state(1, dtype=np.uint32)[0])
+
+
+def fixed_population_shift(config: dict) -> dict | None:
+    """The pre-registered shift per population, or None if not declared."""
+    values = config["real_data_simulation"].get("population_shift")
+    return None if values is None else {str(k): float(v) for k, v in values.items()}
+
+
 # --- phenotype on real genotypes ------------------------------------------------
 
 
@@ -311,28 +347,38 @@ def effect_allele_dosages(config: dict, raw: RawGenotypes, smap: pd.DataFrame):
 
 
 def simulate_phenotype_from_raw(
-    config: dict, raw: RawGenotypes, smap: pd.DataFrame, psam: pd.DataFrame
+    config: dict,
+    raw: RawGenotypes,
+    smap: pd.DataFrame,
+    psam: pd.DataFrame,
+    seed_file,
 ) -> tuple[pd.DataFrame, dict]:
-    """Simulate the HbF-like phenotype on exported sentinel genotypes.
+    """Simulate the HbF-like phenotype on exported sentinel genotypes (step e).
 
     Genotypes are converted to counts of each locus's HbF-increasing allele
     (the table's effect allele) and given the per-allele effect ``beta_sd``
-    from ``planted_effects``; the shift is by ``real_data_simulation.population_column``.
+    from ``planted_effects``. The non-genetic shift is the exact, pre-registered
+    value per population (``real_data_simulation.population_shift``); the noise
+    comes from the step e seed (``seed_file``, spawned child "phenotype").
     """
     sim_cfg = config["real_data_simulation"]
+    shift = fixed_population_shift(config)
+    if shift is None:
+        raise ValueError("real_data_simulation.population_shift is not pre-registered")
+    seeds = step_e_seeds(seed_file)
     geno, betas, loci_meta = effect_allele_dosages(config, raw, smap)
 
     pop_col = sim_cfg["population_column"]
     pops = psam.set_index("IID").reindex(raw.iid)[pop_col]
     if pops.isna().any():
         raise ValueError("some exported samples have no population label in the .psam")
-    seed = int(config["seeds"]["real_phenotype"])
+    seed = seeds["seed"]
     ph = simulate.simulate_phenotype(
         geno,
         pops.to_numpy(),
-        rng=np.random.default_rng(seed),
+        rng=np.random.default_rng(seeds["phenotype"]),
         beta=betas,
-        shift_var_fraction=float(sim_cfg["shift_var_fraction"]),
+        pop_shift=shift,
     )
     betas = list(betas)
     out = pd.DataFrame({"IID": raw.iid, "HBF_SIM": ph.y})
@@ -345,8 +391,10 @@ def simulate_phenotype_from_raw(
     meta = {
         "phenotype": "simulated (hbfgwas.simulate.simulate_phenotype); not a measured trait",
         "n": int(len(out)),
-        "seed": seed,
-        "shift_var_fraction": float(sim_cfg["shift_var_fraction"]),
+        "step_e_seed": seed,
+        "seed_child": "phenotype",
+        "shift_mode": "fixed (pre-registered population_shift)",
+        "shift_var_realised": float(ph.shift_var_fraction),
         "population_column": pop_col,
         "population_shift": {str(k): float(v) for k, v in ph.pop_shift.items()},
         "variance": {
@@ -367,6 +415,7 @@ def prereg_predictions(
     raw_null: RawGenotypes,
     psam: pd.DataFrame,
     eigenvec: pd.DataFrame,
+    exclude: list[str] | None = None,
 ) -> dict:
     """Phase 2 step d: predictions from the real genotypes and PCs, before any phenotype.
 
@@ -379,9 +428,30 @@ def prereg_predictions(
 
     if list(raw_sentinels.iid) != list(raw_null.iid):
         raise ValueError("sentinel and null exports have different samples")
+    exclude = list(exclude or [])
+    if exclude:
+        keep = ~np.isin(raw_sentinels.iid, exclude)
+        missing = sorted(set(exclude) - set(raw_sentinels.iid))
+        if missing:
+            raise ValueError(f"samples to exclude are not in the export: {missing}")
+        raw_sentinels = RawGenotypes(
+            raw_sentinels.fid[keep],
+            raw_sentinels.iid[keep],
+            raw_sentinels.ids,
+            raw_sentinels.counted,
+            raw_sentinels.genotypes[keep],
+        )
+        raw_null = RawGenotypes(
+            raw_null.fid[keep],
+            raw_null.iid[keep],
+            raw_null.ids,
+            raw_null.counted,
+            raw_null.genotypes[keep],
+        )
     sim_cfg = config["real_data_simulation"]
     pcfg = config["prediction"]
     h = float(sim_cfg["shift_var_fraction"])
+    fixed = fixed_population_shift(config)
     alpha = config["association"]["genome_wide_alpha"]
     threshold = config["acceptance"]["locus_recovery"]["required_if_predicted_power_at_least"]
     pops = psam.set_index("IID").reindex(raw_sentinels.iid)[sim_cfg["population_column"]]
@@ -397,6 +467,12 @@ def prereg_predictions(
         raise ValueError("some exported samples have no PCs")
     seq = np.random.SeedSequence(int(config["seeds"]["real_prediction"]))
     power_seed, lambda_seed = seq.spawn(2)
+    svec = None
+    if fixed is not None:
+        missing = sorted(set(pops.astype(str)) - set(fixed))
+        if missing:
+            raise ValueError(f"population_shift has no value for: {missing}")
+        svec = np.array([fixed[str(p)] for p in pops])
 
     geno, betas, meta = effect_allele_dosages(config, raw_sentinels, smap)
     power_out = {}
@@ -410,6 +486,7 @@ def prereg_predictions(
             shift_var_fraction=h,
             n_shift_draws=int(pcfg["power_shift_draws"]),
             rng=np.random.default_rng(power_seed),
+            shift=svec,
         )
         for m, r in zip(meta, res, strict=True):
             power_out.setdefault(m["gene"], {})[side] = r
@@ -429,11 +506,17 @@ def prereg_predictions(
             covariates=cov,
             n_shift_draws=int(pcfg["lambda_shift_draws"]),
             rng=np.random.default_rng(lambda_seed),
+            shift=svec,
         )
     return {
         "computed_before_any_phenotype": True,
         "n_samples": int(len(raw_sentinels.iid)),
+        "excluded_samples": exclude,
         "alpha": alpha,
+        "shift_mode": "fixed" if svec is not None else "random",
+        "population_shift": fixed,
+        "shift_var_realised": float(svec.var()) if svec is not None else None,
+        "population_counts": {str(k): int(v) for k, v in pops.value_counts().sort_index().items()},
         "shift_var_fraction": h,
         "required_if_predicted_power_at_least": threshold,
         "conditional_power": power_out,
@@ -711,10 +794,16 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--raw-null", required=True)
     p.add_argument("--psam", required=True)
     p.add_argument("--eigenvec", required=True)
+    p.add_argument("--exclude", default="", help="comma-separated sample IDs to leave out")
     p.add_argument("--out", required=True)
+
+    p = sub.add_parser("seed-child", help="print an integer seed spawned from the step e seed")
+    p.add_argument("--seed-file", required=True)
+    p.add_argument("--name", required=True, choices=list(STEP_E_SPAWN))
 
     p = sub.add_parser("simulate-phenotype")
     p.add_argument("--config", default=None)
+    p.add_argument("--seed-file", required=True)
     p.add_argument("--raw", required=True)
     p.add_argument("--map", required=True)
     p.add_argument("--psam", required=True)
@@ -778,10 +867,18 @@ def main(argv: list[str] | None = None) -> int:
         ids = sample_ids(a.pvar, a.n, a.seed, include, windows, a.window_bp)
         Path(a.out).write_text("".join(f"{i}\n" for i in ids))
         print(f"{len(ids)} variant IDs -> {a.out}")
+    elif a.cmd == "seed-child":
+        try:
+            print(seed_child_int(a.seed_file, a.name))
+        except ValueError as exc:
+            print(exc, file=sys.stderr)
+            return 1
     elif a.cmd == "simulate-phenotype":
         config = load_config(a.config)
         smap = pd.read_csv(a.map, sep="\t", dtype={"id": str, "chrom": str})
-        pheno, meta = simulate_phenotype_from_raw(config, read_raw(a.raw), smap, read_psam(a.psam))
+        pheno, meta = simulate_phenotype_from_raw(
+            config, read_raw(a.raw), smap, read_psam(a.psam), a.seed_file
+        )
         write_pheno(pheno, a.out)
         Path(a.meta).write_text(json.dumps(meta, indent=2) + "\n")
         print(f"simulated phenotype for {meta['n']} samples -> {a.out}")
@@ -795,6 +892,7 @@ def main(argv: list[str] | None = None) -> int:
             read_raw(a.raw_null),
             read_psam(a.psam),
             read_eigenvec(a.eigenvec),
+            exclude=[x for x in a.exclude.split(",") if x],
         )
         Path(a.out).write_text(json.dumps(res, indent=2, default=float) + "\n")
         lam = res["predicted_lambda_gc"]

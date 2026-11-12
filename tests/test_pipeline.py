@@ -13,6 +13,26 @@ from hbfgwas.config import load_config
 
 CFG = load_config()
 
+# A test-only declared shift for the seven AFR populations (the real values are
+# pre-registered in config/analysis.yaml in step d).
+TEST_SHIFT = {"ACB": -0.3, "ASW": -0.5, "ESN": 0.2, "GWD": 0.6, "LWK": -0.1, "MSL": 0.4, "YRI": 0.1}
+
+
+def _cfg_with_shift():
+    import copy
+
+    cfg = copy.deepcopy(CFG)
+    cfg["real_data_simulation"]["population_shift"] = TEST_SHIFT
+    return cfg
+
+
+@pytest.fixture
+def seed_file(tmp_path):
+    p = tmp_path / "step_e_seed.yaml"
+    p.write_text("seed: 4242\n")
+    return p
+
+
 PVAR = """##fileformat=PVARv1.0
 #CHROM\tPOS\tID\tREF\tALT
 2\t60718000\trsA\tC\tT
@@ -141,10 +161,12 @@ def _raw(tmp_path, counted=("G", "C", "A"), n=60, seed=0):
     return path, psam, g
 
 
-def test_simulate_phenotype_flips_to_the_effect_allele(tmp_path, pvar, loci):
+def test_simulate_phenotype_flips_to_the_effect_allele(tmp_path, pvar, loci, seed_file):
     path, psam, g = _raw(tmp_path)  # export counted G (ALT) for rs1427407; effect allele is T
     smap = pipeline.find_sentinels(pvar, loci)
-    pheno, meta = pipeline.simulate_phenotype_from_raw(CFG, pipeline.read_raw(path), smap, psam)
+    pheno, meta = pipeline.simulate_phenotype_from_raw(
+        _cfg_with_shift(), pipeline.read_raw(path), smap, psam, seed_file
+    )
     planted = {m["gene"]: m for m in meta["planted"]}
     assert planted["BCL11A"]["flipped_to_effect_allele"] is True
     assert planted["HBS1L-MYB"]["flipped_to_effect_allele"] is False
@@ -153,17 +175,22 @@ def test_simulate_phenotype_flips_to_the_effect_allele(tmp_path, pvar, loci):
         "IID",
         "HBF_SIM",
     ]
-    assert meta["seed"] == CFG["seeds"]["real_phenotype"]
-    again, _ = pipeline.simulate_phenotype_from_raw(CFG, pipeline.read_raw(path), smap, psam)
+    assert meta["step_e_seed"] == 4242
+    assert meta["population_shift"] == TEST_SHIFT  # exactly the declared values
+    again, _ = pipeline.simulate_phenotype_from_raw(
+        _cfg_with_shift(), pipeline.read_raw(path), smap, psam, seed_file
+    )
     np.testing.assert_array_equal(pheno["HBF_SIM"], again["HBF_SIM"])
 
 
-def test_simulate_phenotype_rejects_an_allele_mismatch(tmp_path, pvar, loci):
+def test_simulate_phenotype_rejects_an_allele_mismatch(tmp_path, pvar, loci, seed_file):
     path, psam, _ = _raw(tmp_path)
     smap = pipeline.find_sentinels(pvar, loci)
     smap.loc[smap["gene"] == "HBS1L-MYB", ["ref", "alt"]] = ["A", "G"]  # strand flip
     with pytest.raises(ValueError, match="neither REF"):
-        pipeline.simulate_phenotype_from_raw(CFG, pipeline.read_raw(path), smap, psam)
+        pipeline.simulate_phenotype_from_raw(
+            _cfg_with_shift(), pipeline.read_raw(path), smap, psam, seed_file
+        )
 
 
 def test_write_pheno_header(tmp_path):
@@ -203,3 +230,26 @@ def test_sample_ids_can_avoid_the_sentinels(pvar):
     ids = pipeline.sample_ids(pvar, 10, seed=3, exclude_windows=[("2", 60718043)], window_bp=1000)
     assert "rs1427407" not in ids and "rsA" not in ids  # rsA is 43 bp away
     assert set(ids) == {"rs9399137", "rs41322148", "rsB"}
+
+
+def test_real_phenotype_refuses_an_empty_seed_or_undeclared_shift(tmp_path, pvar, loci):
+    path, psam, _ = _raw(tmp_path)
+    smap = pipeline.find_sentinels(pvar, loci)
+    empty = tmp_path / "empty.yaml"
+    empty.write_text("seed: null\n")
+    with pytest.raises(ValueError, match="seed is empty"):
+        pipeline.simulate_phenotype_from_raw(
+            _cfg_with_shift(), pipeline.read_raw(path), smap, psam, empty
+        )
+    seeded = tmp_path / "s.yaml"
+    seeded.write_text("seed: 1\n")
+    with pytest.raises(ValueError, match="not pre-registered"):
+        pipeline.simulate_phenotype_from_raw(CFG, pipeline.read_raw(path), smap, psam, seeded)
+
+
+def test_step_e_seed_children_are_stable(tmp_path):
+    p = tmp_path / "s.yaml"
+    p.write_text("seed: 99\n")
+    a = [pipeline.seed_child_int(p, n) for n in pipeline.STEP_E_SPAWN]
+    assert a == [pipeline.seed_child_int(p, n) for n in pipeline.STEP_E_SPAWN]
+    assert len(set(a)) == 3

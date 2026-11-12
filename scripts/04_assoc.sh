@@ -5,7 +5,8 @@
 # noise); 1000 Genomes has no HbF phenotype.
 #
 # Refuses to run unless:
-#   * every value in the locus table is verified by the user (src/hbfgwas/loci.py), and
+#   * the locus table passes the analysis check (src/hbfgwas/loci.py, signed off by the user),
+#   * the step e seed (config/step_e_seed.yaml) is filled and the population shift is declared, and
 #   * the tag prereg-v1 exists, config/analysis.yaml is unchanged since it, and
 #     acceptance.real is filled in (Phase 2 step d).
 # Overrides, for the synthetic test fileset only:
@@ -49,6 +50,12 @@ else
 	[ "$(cfg acceptance.real)" != "null" ] || die "acceptance.real is empty in $CONFIG"
 fi
 
+seed_file="${STEP_E_SEED_FILE:-$(cfg real_data_simulation.seed_file)}"
+"$PYTHON" -m hbfgwas.pipeline seed-child --seed-file "$seed_file" --name phenotype >/dev/null ||
+	die "the step e seed in $seed_file is empty: it is filled only after the prereg-v1 tag"
+[ "$(cfg real_data_simulation.population_shift)" != "null" ] ||
+	die "real_data_simulation.population_shift is not pre-registered in $CONFIG"
+
 # --- planted variants: sentinels present after QC ----------------------------
 # A sentinel absent from the callset (by rsID and by position) or removed by QC
 # is "not testable in this callset": it is not planted and no proxy is chosen
@@ -60,7 +67,7 @@ cp "$DATA_DIR/planted_map.tsv" "$RUN_DIR/planted.tsv"
 plink --pfile "$in" --keep "$keep" --extract "$DATA_DIR/planted_ids.txt" --export A --out "$DATA_DIR/planted"
 save_log "$DATA_DIR/planted"
 
-"$PYTHON" -m hbfgwas.pipeline simulate-phenotype --config "$CONFIG" \
+"$PYTHON" -m hbfgwas.pipeline simulate-phenotype --config "$CONFIG" --seed-file "$seed_file" \
 	--raw "$DATA_DIR/planted.raw" --map "$DATA_DIR/planted_map.tsv" --psam "$in.psam" \
 	--out "$DATA_DIR/pheno.tsv" --meta "$RUN_DIR/phenotype_meta.json"
 
@@ -75,7 +82,8 @@ save_log "$DATA_DIR/glm_pc"
 
 # --- subset for the Python reference check (05_report.py) --------------------
 "$PYTHON" -m hbfgwas.pipeline sample-ids --pvar "$in.pvar" \
-	--n "$(cfg concordance.n_random_variants)" --seed "$(cfg seeds.real_concordance_sample)" \
+	--n "$(cfg concordance.n_random_variants)" \
+	--seed "$("$PYTHON" -m hbfgwas.pipeline seed-child --seed-file "$seed_file" --name concordance)" \
 	--include "$DATA_DIR/planted_ids.txt" --out "$DATA_DIR/concord_ids.txt"
 plink --pfile "$in" --keep "$keep" --extract "$DATA_DIR/concord_ids.txt" --export A --out "$DATA_DIR/concord"
 save_log "$DATA_DIR/concord"

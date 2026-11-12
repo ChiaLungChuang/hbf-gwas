@@ -93,8 +93,8 @@ seeds:
   # from it (numpy SeedSequence(seed).spawn(4), in that order). Pre-registered
   # after the v3 criteria amendment is merged, pushed, then run exactly once.
   sim_v3: 20261111 # pre-registered 2026-11-11, after the sim-v3 criteria (#17) reached main (#18)
-  real_phenotype: 20261201
-  real_concordance_sample: 20261202
+  real_phenotype: 20261201 # never used; superseded by config/step_e_seed.yaml (step d)
+  real_concordance_sample: 20261202 # never used; superseded by config/step_e_seed.yaml (step d)
   real_prediction: 20261203 # Phase 2 step d predictions (shift draws, null variant sample)
 
 # --- sentinels on real genotypes ----------------------------------------------
@@ -202,7 +202,26 @@ prediction:
 real_data_simulation:
   population_column: Population # the seven 1000 Genomes AFR populations
   shift_var_fraction: 0.2
+  # Step d: the EXACT non-genetic shift per population, in SD units of the
+  # simulated phenotype, identical in the genome-wide scan and in every
+  # redraw (no random shift on real genotypes). null until pre-registered.
+  population_shift: null
   effects: planted_effects # beta_sd per HbF-increasing allele, as above
+  # Step e randomness (scan noise, 2000 power redraws, concordance sample) comes
+  # from ONE seed in this file, kept outside analysis.yaml so it can be filled
+  # after the prereg-v1 tag without changing the tagged configuration.
+  seed_file: config/step_e_seed.yaml
+
+# --- NA20314 sensitivity analysis (step d request; reported, never gated) --------
+# NA20314 (ASW) is far out on PC1/PC2 and the largest heterozygosity outlier
+# (F 0.274) in runs/2026-11-11. The primary analysis keeps it (as
+# pre-registered: --het is reported only); the sensitivity analysis repeats
+# the predictions and, in step e, the association without it, with PCs
+# recomputed on the remaining samples.
+sensitivity:
+  exclude_samples: [NA20314]
+  recompute_pcs: true
+  gated: false
 
 # --- acceptance criteria --------------------------------------------------------
 acceptance:

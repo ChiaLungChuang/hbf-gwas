@@ -138,6 +138,29 @@ def test_assoc_refuses_unverified_loci(tmp_path):
     assert "not signed off" in r.stderr
 
 
+def _signed_loci(tmp_path: Path) -> Path:
+    out = tmp_path / "signed_loci.tsv"
+    subprocess.run([sys.executable, "-m", "hbfgwas.loci", "export", "--out", str(out)], check=True)
+    return out
+
+
+def test_assoc_refuses_an_empty_step_e_seed(tmp_path):
+    empty = tmp_path / "seed.yaml"
+    empty.write_text("seed: null\n")
+    r = _run(
+        "04_assoc.sh",
+        _env(
+            tmp_path,
+            PLINK2=_fake_plink2(tmp_path),
+            HBFGWAS_LOCI_TSV=_signed_loci(tmp_path),
+            HBFGWAS_SKIP_PREREG_CHECK=1,
+            STEP_E_SEED_FILE=empty,
+        ),
+    )
+    assert r.returncode != 0
+    assert "step e seed" in r.stderr
+
+
 def test_assoc_refuses_without_prereg_tag(tmp_path):
     loci = tmp_path / "loci.tsv"
     subprocess.run([sys.executable, "-m", "hbfgwas.loci", "export", "--out", str(loci)], check=True)
@@ -166,6 +189,19 @@ def e2e(tmp_path_factory):
     cfg["qc"]["expected_afr_samples"] = {"min": 130, "max": 140}
     cfg["concordance"]["n_random_variants"] = 300
     cfg["prediction"].update(n_null_variants=500, power_shift_draws=200, lambda_shift_draws=50)
+    # test-only declared shift and sensitivity exclusion on the synthetic samples
+    cfg["real_data_simulation"]["population_shift"] = {
+        "ACB": -0.3,
+        "ASW": -0.5,
+        "ESN": 0.2,
+        "GWD": 0.6,
+        "LWK": -0.1,
+        "MSL": 0.4,
+        "YRI": 0.1,
+    }
+    cfg["sensitivity"]["exclude_samples"] = ["SYN_ASW_05"]
+    seed_file = tmp / "step_e_seed.yaml"
+    seed_file.write_text("seed: 777\n")
     cfg_path = tmp / "synthetic_config.yaml"
     cfg_path.write_text(yaml.safe_dump(cfg, sort_keys=False))
     loci = tmp / "loci.tsv"
@@ -183,6 +219,7 @@ def e2e(tmp_path_factory):
         MIN_BYTES_SMALL=10,
         HBFGWAS_LOCI_TSV=loci,
         HBFGWAS_SKIP_PREREG_CHECK=1,
+        STEP_E_SEED_FILE=seed_file,
     )
     out = {}
     for script in (
@@ -191,6 +228,7 @@ def e2e(tmp_path_factory):
         "02_qc.sh",
         "03_pca.sh",
         "03b_pc_plot.py",
+        "03d_sensitivity_pca.sh",
         "03c_prereg_predictions.sh",
         "04_assoc.sh",
         "05_report.py",
@@ -367,3 +405,14 @@ def test_scripts_refuse_an_unpinned_plink2(tmp_path):
     r = _run("02_qc.sh", _env(tmp_path, PLINK2=other))
     assert r.returncode != 0
     assert "pins v2.0.0-b.1.4 (7 Nov 2026)" in r.stderr
+
+
+def test_e2e_sensitivity_pca_and_predictions(e2e):
+    # NA20314-style sensitivity analysis, on a synthetic sample (not gated)
+    assert _n(e2e["run"] / "sens_pca_eigenval.txt") == 10
+    sens = json.loads((e2e["run"] / "prereg_predictions_sensitivity.json").read_text())
+    prim = json.loads((e2e["run"] / "prereg_predictions.json").read_text())
+    assert sens["excluded_samples"] == ["SYN_ASW_05"]
+    assert sens["n_samples"] == prim["n_samples"] - 1
+    assert prim["shift_mode"] == "fixed" and sens["shift_mode"] == "fixed"
+    assert prim["population_shift"]["GWD"] == 0.6
