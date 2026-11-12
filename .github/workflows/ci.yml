@@ -1,17 +1,36 @@
 name: CI
 
+# What runs when (scripts/ci_scope.py decides; docs/ci.md explains):
+# - pushes to main, manual runs, and pull requests into main that are not
+#   drafts: lint, tests on Python 3.11 and 3.12, and the acceptance gate;
+# - draft pull requests (stacked PRs are opened as drafts) and pull requests
+#   into other branches: lint and tests on Python 3.12. A draft cannot be
+#   merged; "Ready for review" starts a full run;
+# - documentation-only changes: lint only (it includes the wording check).
+# A newer push to the same pull request or branch cancels the run it replaces.
+
 on:
   push:
     branches: [main]
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      code: ${{ steps.scope.outputs.code }}
+      full: ${{ steps.scope.outputs.full }}
+      pythons: ${{ steps.scope.outputs.pythons }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,6 +38,20 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: What this run checks
+        id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          DRAFT: ${{ github.event.pull_request.draft }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: python scripts/ci_scope.py >> "$GITHUB_OUTPUT"
       - name: Install ruff
         run: python -m pip install ruff==0.17.4
       - name: ruff check
@@ -34,11 +67,14 @@ jobs:
         run: python scripts/check_language.py --commits
 
   test:
+    needs: lint
+    if: ${{ !cancelled() && needs.lint.outputs.code == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ${{ fromJSON(needs.lint.outputs.pythons) }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,27 +82,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
       - name: Install plink2 (official build, pinned) and zstd
-        env:
-          # https://www.cog-genomics.org/plink/2.0/ "Linux 64-bit Intel", Beta 1.4 (7 Nov 2026)
-          PLINK2_URL: https://s3.amazonaws.com/plink2-assets/beta1/plink2_linux_x86_64_20261107.zip
-          # must equal config/analysis.yaml plink2.builds.linux_x86_64 (tests/test_config.py)
-          PLINK2_SHA256: 16b5cf92faed7e8b8aa1010c6eab9bac17c92b57ccfa69c4d059b1b17b98eb70
-        run: |
-          command -v zstd || sudo apt-get install -y -qq zstd
-          curl -fsSL -o "$RUNNER_TEMP/plink2.zip" "$PLINK2_URL"
-          echo "$PLINK2_SHA256  $RUNNER_TEMP/plink2.zip" | sha256sum -c -
-          unzip -o -q "$RUNNER_TEMP/plink2.zip" -d "$RUNNER_TEMP/plink2"
-          echo "$RUNNER_TEMP/plink2" >> "$GITHUB_PATH"
-      - name: Tool versions
-        run: plink2 --version && zstd --version && bash --version | head -1
-      - name: plink2 is the build pinned in config/analysis.yaml
-        run: |
-          python -m pip install -q pyyaml
-          want=$(python -c "import yaml; c=yaml.safe_load(open('config/analysis.yaml'))['plink2']; print(c['version'], '|', c['build_date'])")
-          got=$(plink2 --version | head -n 1)
-          echo "config: $want"; echo "plink2: $got"
-          case "$got" in *"${want% |*}"*"(${want#*| })"*) echo "pinned build OK" ;; *) echo "::error::plink2 is not the pinned build"; exit 1 ;; esac
+        uses: ./.github/actions/install-plink2
       - name: Install package
         run: python -m pip install -e ".[dev]"
       - name: pytest (plink2 end-to-end tests required)
@@ -77,12 +96,17 @@ jobs:
   gate:
     # Re-runs the pre-registered simulated experiment and applies the
     # acceptance gate: a statistical regression breaks the build.
+    needs: lint
+    if: ${{ !cancelled() && needs.lint.outputs.code == 'true' && needs.lint.outputs.full == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
       - name: Install package
         run: python -m pip install -e .
       - name: Is the current criteria version's seed pre-registered?
@@ -121,3 +145,4 @@ jobs:
         with:
           name: sim-stratification
           path: ${{ runner.temp }}/sim
+          retention-days: 14

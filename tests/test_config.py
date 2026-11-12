@@ -210,7 +210,9 @@ def test_plink2_pin_matches_ci():
     # review item G: CI downloads exactly the Linux build recorded in the config
     from pathlib import Path
 
-    ci = (Path(__file__).resolve().parents[1] / ".github/workflows/ci.yml").read_text()
+    # CI and the weekly rebuild both install plink2 through this one action
+    action = Path(__file__).resolve().parents[1] / ".github/actions/install-plink2/action.yml"
+    ci = action.read_text()
     pin = CFG["plink2"]
     assert pin["version"] == "v2.0.0-b.1.4" and pin["build_date"] == "7 Nov 2026"
     linux = pin["builds"]["linux_x86_64"]
