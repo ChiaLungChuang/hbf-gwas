@@ -2,8 +2,8 @@
 
 One row per field of the locus table (src/hbfgwas/loci.py), with the current
 value, exactly where in its source to read it, and a link to that page. Rows
-are grouped by source page so each page is opened once. Nothing here marks
-anything verified; the user checks each row and reports the result.
+are grouped by source page so each page is opened once. Each row shows its
+sign-off status from ``loci.SIGNOFF``.
 
     python -m hbfgwas.signoff --out docs/locus-signoff.md
 """
@@ -233,18 +233,42 @@ def rows():
     return out
 
 
+def status(gene: str, field: str) -> tuple[str, str]:
+    """(mark, text) for a row: verified (by whom), superseded, or not covered."""
+    table = {loc.gene.value: loc for loc in LOCI}
+    f = getattr(table[gene], field)
+    if f.verified:
+        return "✅", f"verified by {f.verified_by}"
+    if f.superseded_by:
+        return "↪", f.superseded_by
+    return "☐", "not covered by the sign-off"
+
+
 def markdown() -> str:
+    marks = [status(gene, field)[0] for _, _, gene, field, _, _ in rows()]
+    n_ver, n_sup, n_open = marks.count("✅"), marks.count("↪"), marks.count("☐")
     lines = [
         "# Locus table sign-off checklist (issue #3)",
         "",
         "Generated from `src/hbfgwas/loci.py` by `python -m hbfgwas.signoff`;",
         "`tests/test_signoff.py` fails if this file and the table disagree.",
-        "**Nothing here is verified.** Check each row against its source and tell",
-        "Claude the result by row ID, e.g. `S05 OK`, or `S12 wrong: <value> (<where>)`.",
-        "Only you mark values `verified: true` (D-007).",
+        "",
+        "**Sign-off recorded 2026-11-12 from the user's message** (`loci.SIGNOFF`):",
+        f"{n_ver} rows verified (✅, with who checked them), {n_sup} superseded (↪),",
+        f"{n_open} not covered (☐). Nothing is attributed to the user that the user did",
+        "not check: checks by the user's reviewer and by the step c run are labelled",
+        "as such. Report further checks by row ID, e.g. `S05 OK` or",
+        "`S12 wrong: <value> (<where>)`.",
         "",
         "One row per field of the locus table (3 loci x 13 fields = 39 rows),",
         "grouped by source so each page is opened once.",
+        "",
+        "**Two checks.** The full check (`python -m hbfgwas.loci check`,",
+        "`pytest -m realdata`) needs every row verified or superseded and still",
+        f"fails on the {n_open} rows marked ☐. The analysis check",
+        "(`check --analysis`) needs only the fields the real-data scripts use",
+        "(chromosome, position, effect and other allele, effect size, effect-allele",
+        "frequency in the source cohort) and passes; `03c` and `04` require it.",
         "",
         "**Links checked 2026-11-11.** PMC, dbSNP and the Ensembl REST JSON links",
         "load directly. The publisher DOIs and Europe PMC load in a browser (they",
@@ -254,13 +278,12 @@ def markdown() -> str:
         "for the same rsID holds the same data (`mappings` for location and",
         "alleles, `populations` for 1000GENOMES:phase_3:AFR frequencies).",
         "",
-        "**Note on S24 (HBB cluster, `effect_allele_freq_1kg_afr`).** The value is",
-        "null because no 1000 Genomes phase 3 frequency was found. The current",
-        'readiness check treats a null as "missing" and can never pass with it.',
-        "If you confirm the absence, decide how that should count (e.g. allow a",
-        "verified absence); Claude will not change the check without your decision.",
-        "On real data, the frequency is computed from the callset itself, and HBB",
-        'is "not testable in this callset" if rs7482144 is absent or fails QC.',
+        "**Note on S21 (HBB cluster, `effect_allele_freq_1kg_afr`).** The value is",
+        "null because no 1000 Genomes phase 3 frequency exists: the step c run found",
+        "rs7482144 absent from the callset itself. (An earlier version of this",
+        "file called this row S24 by mistake; S24 is HBS1L-MYB's effect-size scale.)",
+        "The full check counts a null as missing, so it cannot pass with it; HBB is",
+        '"not testable in this callset" either way.',
         "",
     ]
     by_group = {}
@@ -269,11 +292,15 @@ def markdown() -> str:
     for gi, (title, links, _) in enumerate(GROUPS):
         lines += [f"## {gi + 1}. {title}", "", f"Open: {links}", ""]
         lines += [
-            "| ✓ | ID | locus | field | current value | where to read it |",
-            "|---|---|---|---|---|---|",
+            "| status | ID | locus | field | current value | where to read it | sign-off |",
+            "|---|---|---|---|---|---|---|",
         ]
         for rid, _, gene, field, value, where in by_group[gi]:
-            lines.append(f"| ☐ | {rid} | {gene} | `{field}` | {_cell(value)} | {_cell(where)} |")
+            mark, text = status(gene, field)
+            lines.append(
+                f"| {mark} | {rid} | {gene} | `{field}` | {_cell(value)} | {_cell(where)} "
+                f"| {_cell(text)} |"
+            )
         lines.append("")
     return "\n".join(lines)
 

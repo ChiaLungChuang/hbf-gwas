@@ -30,7 +30,9 @@ def _all_verified(locus: Locus) -> Locus:
     for f in dataclasses.fields(Locus):
         field = getattr(locus, f.name)
         value = field.value if field.value is not None else "x"
-        changes[f.name] = Sourced(value=value, source=field.source or "test", verified=True)
+        changes[f.name] = Sourced(
+            value=value, source=field.source or "test", verified=True, verified_by="test"
+        )
     return dataclasses.replace(locus, **changes)
 
 
@@ -49,11 +51,57 @@ def test_every_field_is_sourced():
                 assert field.source, f"{loc.gene.value}.{f.name} has a value but no source"
 
 
-def test_nothing_is_verified_yet():
-    # The user signs values off by hand; Claude never sets verified=True.
+# The user's sign-off of 2026-11-12 (issue #3), as row IDs of docs/locus-signoff.md.
+VERIFIED = {
+    ("BCL11A", "chromosome"),
+    ("BCL11A", "position_grch37"),
+    ("BCL11A", "other_allele"),
+    ("BCL11A", "effect_size"),
+    ("BCL11A", "effect_allele_freq_cohort"),
+    ("BCL11A", "effect_allele"),
+    ("HBS1L-MYB", "chromosome"),
+    ("HBS1L-MYB", "position_grch37"),
+    ("HBS1L-MYB", "other_allele"),
+    ("HBS1L-MYB", "effect_allele"),
+    ("HBS1L-MYB", "effect_size"),
+    ("HBS1L-MYB", "effect_size_scale"),
+    ("HBS1L-MYB", "effect_allele_freq_cohort"),
+    ("HBB cluster", "chromosome"),
+    ("HBB cluster", "position_grch37"),
+    ("HBB cluster", "other_allele"),
+    ("HBB cluster", "effect_allele"),
+    ("HBB cluster", "effect_size"),
+    ("HBB cluster", "effect_size_scale"),
+    ("HBB cluster", "effect_allele_freq_cohort"),
+}  # S10-S12, S34, S37, S39, S14-S16, S22-S24, S26, S18-S20, S28-S30, S32
+SUPERSEDED = {("BCL11A", "effect_allele_freq_1kg_afr"), ("HBS1L-MYB", "effect_allele_freq_1kg_afr")}
+
+
+def test_signoff_record_is_exactly_what_was_checked():
+    verified, superseded = set(), set()
     for loc in LOCI:
         for f in dataclasses.fields(Locus):
-            assert getattr(loc, f.name).verified is False
+            field = getattr(loc, f.name)
+            if field.verified:
+                verified.add((loc.gene.value, f.name))
+                assert field.verified_by, (loc.gene.value, f.name)
+            if field.superseded_by:
+                superseded.add((loc.gene.value, f.name))
+    assert verified == VERIFIED
+    assert superseded == SUPERSEDED
+
+
+def test_attributions_do_not_credit_the_user_for_others_checks():
+    by = {(g, f): getattr({x.gene.value: x for x in LOCI}[g], f).verified_by for g, f in VERIFIED}
+    user = {k for k, v in by.items() if v.startswith("the user, by hand")}
+    assert user == {("BCL11A", "effect_size"), ("BCL11A", "effect_allele_freq_cohort")}
+    assert "patent" in by[("BCL11A", "effect_allele")]
+
+
+def test_analysis_fields_are_ready_and_guarded():
+    assert loci.analysis_ready(LOCI)
+    broken = (dataclasses.replace(LOCI[0], effect_size=Sourced(0.076, "x")),) + LOCI[1:]
+    assert not loci.analysis_ready(broken)
 
 
 def test_a_null_value_cannot_be_verified():
@@ -72,10 +120,10 @@ def test_chromosomes_match_the_cytobands_when_filled():
             assert str(loc.locus.value).startswith(str(loc.chromosome.value))
 
 
-def test_problems_list_every_unverified_field():
+def test_problems_list_every_unresolved_field():
     problems = loci.unverified_fields(LOCI)
     n_fields = len(dataclasses.fields(Locus))
-    assert len(problems) == 3 * n_fields
+    assert len(problems) == 3 * n_fields - len(VERIFIED) - len(SUPERSEDED) == 17
     assert not loci.real_data_ready(LOCI)
 
 

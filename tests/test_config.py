@@ -165,3 +165,12 @@ def test_plink2_pin_matches_ci():
     assert f"PLINK2_URL: {linux['url']}" in ci
     assert f"PLINK2_SHA256: {linux['zip_sha256']}" in ci
     assert "20261107" in pin["builds"]["mac_arm64"]["url"]
+
+
+def test_bcl11a_beta_is_the_derived_sd_value_not_wonkams_trait_units():
+    # user note (2026-11-12): Wonkam 2025's beta = 0.26 is in trait units; keep 0.456435 SD
+    import math
+
+    b = {e["locus"]: e["beta_sd"] for e in CFG["planted_effects"]}["BCL11A"]
+    assert b == 0.456435
+    assert b == pytest.approx(math.sqrt(0.076 / (2 * 0.24 * 0.76)), abs=1e-6)

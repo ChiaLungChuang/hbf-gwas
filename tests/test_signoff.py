@@ -20,11 +20,21 @@ def test_committed_checklist_matches_the_table():
     assert DOC.read_text() == signoff.markdown()
 
 
-def test_nothing_is_marked_verified():
+def test_status_column_matches_the_signoff_record():
     text = DOC.read_text()
-    assert "☑" not in text and "[x]" not in text.lower()
-    assert text.count("| ☐ |") == 39
-    assert all(not getattr(loc, f.name).verified for loc in LOCI for f in dataclasses.fields(Locus))
+    assert text.count("| ✅ |") == 20
+    assert text.count("| ↪ |") == 2
+    assert text.count("| ☐ |") == 17
+    for rid, _, gene, field, _, _ in signoff.rows():
+        f = getattr({loc.gene.value: loc for loc in LOCI}[gene], field)
+        mark = "✅" if f.verified else ("↪" if f.superseded_by else "☐")
+        assert f"| {mark} | {rid} |" in text, rid
+
+
+def test_the_hbb_frequency_note_names_the_right_row():
+    rows = {rid: (gene, field) for rid, _, gene, field, _, _ in signoff.rows()}
+    assert rows["S21"] == ("HBB cluster", "effect_allele_freq_1kg_afr")
+    assert "Note on S21" in DOC.read_text()
 
 
 def test_every_group_has_a_link():

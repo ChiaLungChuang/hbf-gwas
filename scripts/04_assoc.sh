@@ -9,7 +9,7 @@
 #   * the tag prereg-v1 exists, config/analysis.yaml is unchanged since it, and
 #     acceptance.real is filled in (Phase 2 step d).
 # Overrides, for the synthetic test fileset only:
-#   HBFGWAS_LOCI_TSV=<file>       use this locus table, skip the sign-off check
+#   HBFGWAS_LOCI_TSV=<file>       use this locus table (it must still be analysis_ready)
 #   HBFGWAS_SKIP_PREREG_CHECK=1   skip the prereg-v1 checks
 #
 # In:  DATA_DIR/afr_qc.*, DATA_DIR/pca.eigenvec, DATA_DIR/unrelated.id
@@ -31,11 +31,13 @@ n_pcs=$(cfg pca.n_pcs)
 # --- preconditions ---------------------------------------------------------
 loci="${HBFGWAS_LOCI_TSV:-}"
 if [ -n "$loci" ]; then
-	log "WARNING: HBFGWAS_LOCI_TSV is set; using $loci without the sign-off check"
+	log "WARNING: HBFGWAS_LOCI_TSV is set; using $loci instead of exporting src/hbfgwas/loci.py"
+	"$PYTHON" -m hbfgwas.pipeline loci-ready --loci "$loci" ||
+		die "the locus table $loci is not signed off (analysis_ready is false for a locus)"
 else
 	loci="$DATA_DIR/loci.tsv"
-	"$PYTHON" -m hbfgwas.loci export --require-verified --out "$loci" ||
-		die "the locus table is not signed off by the user (python -m hbfgwas.loci check)"
+	"$PYTHON" -m hbfgwas.loci export --require-analysis-ready --out "$loci" ||
+		die "the locus table is not signed off by the user (python -m hbfgwas.loci check --analysis)"
 fi
 if [ "${HBFGWAS_SKIP_PREREG_CHECK:-0}" = 1 ]; then
 	log "WARNING: HBFGWAS_SKIP_PREREG_CHECK=1; not checking the prereg-v1 tag"

@@ -678,6 +678,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--config", default=None)
     p.add_argument("key")
 
+    p = sub.add_parser(
+        "loci-ready", help="exit 1 unless every row of a locus TSV is analysis_ready"
+    )
+    p.add_argument("--loci", required=True)
+
     p = sub.add_parser("sentinels")
     p.add_argument("--pvar", required=True)
     p.add_argument("--loci", required=True)
@@ -729,6 +734,15 @@ def main(argv: list[str] | None = None) -> int:
     a = parser.parse_args(argv)
     if a.cmd == "config-get":
         print(format_scalar(config_get(load_config(a.config), a.key)))
+    elif a.cmd == "loci-ready":
+        loci_df = pd.read_csv(a.loci, sep="\t", dtype={"rsid": str})
+        if "analysis_ready" not in loci_df.columns:
+            print(f"{a.loci} has no analysis_ready column")
+            return 1
+        ready = loci_df["analysis_ready"].astype(str).str.lower().eq("true")
+        for gene, ok in zip(loci_df["gene"], ready, strict=True):
+            print(f"{gene}: {'analysis-ready' if ok else 'NOT analysis-ready'}")
+        return 0 if ready.all() else 1
     elif a.cmd == "sentinels":
         loci = pd.read_csv(a.loci, sep="\t", dtype={"chromosome": str, "rsid": str})
         smap = find_sentinels(a.pvar, loci)

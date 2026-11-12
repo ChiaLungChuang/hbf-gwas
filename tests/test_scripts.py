@@ -120,8 +120,20 @@ def test_download_checks_free_disk(tmp_path):
     assert "free" in r.stderr
 
 
+def _unsigned_loci(tmp_path: Path) -> Path:
+    out = tmp_path / "unsigned_loci.tsv"
+    subprocess.run([sys.executable, "-m", "hbfgwas.loci", "export", "--out", str(out)], check=True)
+    df = pd.read_csv(out, sep="\t")
+    df.loc[0, "analysis_ready"] = False  # one locus not signed off
+    df.to_csv(out, sep="\t", index=False)
+    return out
+
+
 def test_assoc_refuses_unverified_loci(tmp_path):
-    r = _run("04_assoc.sh", _env(tmp_path, PLINK2=_fake_plink2(tmp_path)))
+    r = _run(
+        "04_assoc.sh",
+        _env(tmp_path, PLINK2=_fake_plink2(tmp_path), HBFGWAS_LOCI_TSV=_unsigned_loci(tmp_path)),
+    )
     assert r.returncode != 0
     assert "not signed off" in r.stderr
 

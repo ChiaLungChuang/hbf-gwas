@@ -8,8 +8,8 @@
 #     (median and 5th-95th percentile over draws of the population shift).
 # A sentinel absent from the QC'd callset is "not testable in this callset".
 #
-#   HBFGWAS_LOCI_TSV=<file>   use this locus table without the sign-off check
-#                             (synthetic test fileset only)
+#   HBFGWAS_LOCI_TSV=<file>   use this locus table instead of exporting loci.py
+#                             (synthetic test fileset); it must still be analysis_ready
 #
 # In:  DATA_DIR/afr_qc.*, DATA_DIR/unrelated.id, DATA_DIR/pca.eigenvec
 # Out: RUN_DIR/prereg_predictions.json, RUN_DIR/prereg_sentinels.tsv, logs/
@@ -25,11 +25,13 @@ in="$DATA_DIR/afr_qc"
 keep="$DATA_DIR/unrelated.id"
 loci="${HBFGWAS_LOCI_TSV:-}"
 if [ -n "$loci" ]; then
-	log "WARNING: HBFGWAS_LOCI_TSV is set; using $loci without the sign-off check"
+	log "WARNING: HBFGWAS_LOCI_TSV is set; using $loci instead of exporting src/hbfgwas/loci.py"
+	"$PYTHON" -m hbfgwas.pipeline loci-ready --loci "$loci" ||
+		die "the locus table $loci is not signed off (analysis_ready is false for a locus)"
 else
 	loci="$DATA_DIR/loci.tsv"
-	"$PYTHON" -m hbfgwas.loci export --require-verified --out "$loci" ||
-		die "the locus table is not signed off by the user (python -m hbfgwas.loci check)"
+	"$PYTHON" -m hbfgwas.loci export --require-analysis-ready --out "$loci" ||
+		die "the locus table is not signed off by the user (python -m hbfgwas.loci check --analysis)"
 fi
 
 "$PYTHON" -m hbfgwas.pipeline sentinels --pvar "$in.pvar" --loci "$loci" \
