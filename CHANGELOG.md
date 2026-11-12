@@ -143,3 +143,13 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   `_common.sh` (`require_step_e_ready`). The fixed-shift code, seed slot and
   sensitivity PCA, written for step d (`a2bbb96`, `67a8df2`), now arrive with
   this PR.
+
+### Repository and CI
+- CI minutes (2026-11-12, the user's request after the monthly limit was
+  hit): superseded runs are cancelled. Draft PRs (stacked PRs) get lint and
+  tests on Python 3.12. PRs into main that are not drafts, pushes to main and
+  manual runs get the full checks. Documentation-only changes run lint only.
+  pip and the pinned plink2 zip are cached, and every job has a timeout. The
+  clean-clone rebuild (`scripts/rebuild.sh`, workflow "Rebuild from a clean
+  clone") runs on manual trigger and weekly only. `scripts/ci_scope.py`,
+  `tests/test_ci_scope.py`, `docs/ci.md`.
