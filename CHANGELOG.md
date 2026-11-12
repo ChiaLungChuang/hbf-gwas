@@ -126,3 +126,13 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   declared first), empty step e seed slot (`config/step_e_seed.yaml`), NA20314
   sensitivity PCA (`03d`) and predictions, real-data criteria real-v1 in
   `acceptance.real`; predictions in `runs/2026-11-12-stepd/` (no phenotype).
+
+### Repository and CI
+- CI minutes (2026-11-12, the user's request after the monthly limit was
+  hit): superseded runs are cancelled. Draft PRs (stacked PRs) get lint and
+  tests on Python 3.12. PRs into main that are not drafts, pushes to main and
+  manual runs get the full checks. Documentation-only changes run lint only.
+  pip and the pinned plink2 zip are cached, and every job has a timeout. The
+  clean-clone rebuild (`scripts/rebuild.sh`, workflow "Rebuild from a clean
+  clone") runs on manual trigger and weekly only. `scripts/ci_scope.py`,
+  `tests/test_ci_scope.py`, `docs/ci.md`.
