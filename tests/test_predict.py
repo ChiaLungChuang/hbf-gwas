@@ -209,3 +209,87 @@ def test_predicted_lambda_summary(lam_scenario):
     assert out["median"] > 1.5
     assert adj["median"] == pytest.approx(1.0, abs=0.06)
     assert out["n_variants"] == 2000 and out["n_shift_draws"] == 50
+
+
+# --- fixed (pre-registered) population shift, as used on real genotypes (step d) ----
+
+
+def _fixed_shift(pop, h, seed):
+    labels = np.unique(pop)
+    draws = np.random.default_rng(seed).standard_normal((1, labels.size))
+    _, means = sim.scale_shift_draws(draws, np.searchsorted(labels, pop), h)
+    return {lab: float(means[i, 0]) for i, lab in enumerate(labels)}
+
+
+def test_simulate_phenotype_with_a_fixed_population_shift(scenario):
+    s = scenario
+    shift = _fixed_shift(s["pop"], 0.15, 1)
+    ph = sim.simulate_phenotype(
+        s["g"], s["pop"], rng=np.random.default_rng(2), beta=s["betas"], pop_shift=shift, n_reps=20
+    )
+    expected = np.array([shift[p] for p in s["pop"]])
+    for r in range(20):  # the same shift in every repetition; only noise is redrawn
+        np.testing.assert_allclose(ph.shift[:, r], expected)
+    assert ph.shift_var_fraction == pytest.approx(expected.var())
+    np.testing.assert_allclose(
+        ph.noise.var(axis=0).mean(), 1 - ph.genetic[:, 0].var() - expected.var(), rtol=0.05
+    )
+
+
+def test_fixed_shift_consumes_no_random_numbers(scenario):
+    s = scenario
+    shift = _fixed_shift(s["pop"], 0.15, 1)
+    a = sim.simulate_phenotype(
+        s["g"], s["pop"], rng=np.random.default_rng(3), beta=s["betas"], pop_shift=shift
+    )
+    b = sim.simulate_phenotype(s["g"], s["pop"], rng=np.random.default_rng(3), beta=s["betas"])
+    np.testing.assert_allclose(a.noise / a.noise.std(), b.noise / b.noise.std())
+
+
+def test_fixed_shift_needs_every_population(scenario):
+    s = scenario
+    shift = _fixed_shift(s["pop"], 0.15, 1)
+    shift.pop(next(iter(shift)))
+    with pytest.raises(ValueError):
+        sim.simulate_phenotype(
+            s["g"], s["pop"], rng=np.random.default_rng(4), beta=s["betas"], pop_shift=shift
+        )
+
+
+@pytest.mark.parametrize("adjusted", [True, False])
+def test_conditional_power_with_a_fixed_shift_matches_monte_carlo(scenario, adjusted):
+    s = scenario
+    shift = _fixed_shift(s["pop"], 0.15, 5)
+    svec = np.array([shift[p] for p in s["pop"]])
+    cov = s["pcs"] if adjusted else None
+    pred = predict.conditional_power(s["g"], s["betas"], s["alpha"], covariates=cov, shift=svec)
+    ph = sim.simulate_phenotype(
+        s["g"],
+        s["pop"],
+        rng=np.random.default_rng(6),
+        beta=s["betas"],
+        pop_shift=shift,
+        n_reps=4000,
+    )
+    emp = (assoc.linear_assoc(s["g"], ph.y, cov).p < s["alpha"]).mean(axis=1)
+    for j, p in enumerate(pred):
+        assert p["power_mc_se"] == 0.0
+        se = np.sqrt(max(p["power"] * (1 - p["power"]), 1e-4) / 4000)
+        assert abs(emp[j] - p["power"]) < 4 * se, (j, emp[j], p["power"])
+
+
+def test_predicted_lambda_with_a_fixed_shift_matches_observed(lam_scenario):
+    s = lam_scenario
+    shift = _fixed_shift(s["pop"], s["h"], 7)
+    svec = np.array([shift[p] for p in s["pop"]])
+    pred = predict.predicted_lambda(
+        s["g"], s["pop"], s["h"], shift=svec, n_shift_draws=300, rng=np.random.default_rng(8)
+    )
+    ph = sim.simulate_phenotype(
+        s["g"][:, :1], s["pop"], rng=np.random.default_rng(9), r2=[0.0], pop_shift=shift, n_reps=40
+    )
+    res = assoc.linear_assoc(s["g"], ph.y)
+    observed = np.array([assoc.lambda_gc(res.p[:, r]) for r in range(40)])
+    se = observed.std(ddof=1) / np.sqrt(40)
+    assert abs(observed.mean() - pred["mean"]) < 3 * se + 0.01, (observed.mean(), pred)
+    assert pred["shift_mode"] == "fixed"
