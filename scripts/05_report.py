@@ -18,6 +18,7 @@ import os
 import sys
 import time
 
+from hbfgwas import redact
 from hbfgwas.pipeline import main
 
 if __name__ == "__main__":
@@ -25,4 +26,6 @@ if __name__ == "__main__":
     data_dir = os.environ.get("DATA_DIR", "data/1kg")
     run_dir = os.environ.get("RUN_DIR", "runs/" + time.strftime("%Y-%m-%d", time.gmtime()))
     os.makedirs(run_dir, exist_ok=True)
-    sys.exit(main(["report", "--config", config, "--data-dir", data_dir, "--run-dir", run_dir]))
+    with redact.capture(run_dir, "05_report"):
+        status = main(["report", "--config", config, "--data-dir", data_dir, "--run-dir", run_dir])
+    sys.exit(status)

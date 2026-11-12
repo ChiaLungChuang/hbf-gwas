@@ -11,6 +11,18 @@ documents the run goes to `runs/<date>/` and **is** committed: the download
 manifest, `plink2_version.txt`, every plink2 `.log`, the per-filter QC table,
 PCA eigenvalues, results JSON and figures.
 
+**Logs are redacted when they are written** (since 2026-11-12, D-043). Each
+script saves its own stdout and stderr as
+`runs/<date>/logs/<script>.stdout.txt` / `.stderr.txt`, so there is no need
+to redirect them. Every plink2 log and record is copied through
+`hbfgwas.redact`, which removes the hostname and makes absolute paths
+repo-relative. Outside the repository, `~`, `[DATA_DIR]`, `[RUN_DIR]` and
+`[TMP]` stand in, and `[user]` replaces a user name. Each run directory gets a
+`REDACTION.md` that says so; mention it in the run's README too. Records
+committed before this change (`runs/2026-11-11/`, `runs/2026-11-12-stepd/`)
+are not edited. They still contain local paths and the hostname
+(docs/publication-plan.md covers them).
+
 ## 0. Before anything
 
 1. **Sign off the locus table** (issue #3). Check every value in

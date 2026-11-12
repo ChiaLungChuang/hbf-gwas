@@ -17,6 +17,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 # shellcheck source=scripts/_common.sh
 . "$here/_common.sh"
 setup_dirs
+capture_logs "$@"
 
 seed_file="${STEP_E_SEED_FILE:-$(cfg real_data_simulation.seed_file)}"
 [ -s "$DATA_DIR/planted.raw" ] || die "no $DATA_DIR/planted.raw: run 04_assoc.sh first"

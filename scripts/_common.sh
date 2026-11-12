@@ -9,6 +9,12 @@
 #   DATA_DIR    genotype files; never committed    (default: data/1kg)
 #   RUN_DIR     run documentation; committed       (default: runs/<UTC date>)
 #   PLINK_THREADS, PLINK_MEMORY_MB                 passed to plink2 if set
+#
+# Run records are redacted when they are written (hbfgwas.redact): no
+# hostname, and absolute paths made repo-relative. Each script saves its own
+# stdout and stderr as RUN_DIR/logs/<script>.stdout.txt / .stderr.txt
+# (capture_logs), and plink2 logs are copied through the same filter
+# (save_log). RUN_DIR/REDACTION.md states this for the run.
 
 : "${PYTHON:=python3}"
 : "${PLINK2:=plink2}"
@@ -28,6 +34,43 @@ setup_dirs() {
 	mkdir -p "$DATA_DIR" "$RUN_DIR/logs"
 	DATA_DIR=$(cd "$DATA_DIR" && pwd)
 	RUN_DIR=$(cd "$RUN_DIR" && pwd)
+	"$PYTHON" -m hbfgwas.redact --note "$RUN_DIR"
+}
+
+REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+
+# Copy file $1 to $2 as a run record: hostname removed, absolute paths made
+# repo-relative (DATA_DIR / RUN_DIR outside the repository read [DATA_DIR] /
+# [RUN_DIR]).
+redact_to() {
+	"$PYTHON" -m hbfgwas.redact --repo-root "$REPO_ROOT" \
+		--alias DATA_DIR="$DATA_DIR" --alias RUN_DIR="$RUN_DIR" "$1" "$2"
+}
+
+# Run the calling script again, showing its stdout and stderr as usual and
+# saving them, redacted, as RUN_DIR/logs/<script>.stdout.txt and .stderr.txt.
+# Call once, right after setup_dirs:  capture_logs "$@"
+# The exit status is the script's own.
+capture_logs() {
+	local name tmp status
+	name=$(basename "$0" .sh)
+	# already running inside this script's own capture (a script started by
+	# another captured script, e.g. by step_e.sh, still captures itself)
+	if [ "${HBFGWAS_CAPTURED:-}" = "$name" ]; then return 0; fi
+	tmp=$(mktemp -d "${TMPDIR:-/tmp}/hbfgwas-log.XXXXXX")
+	set +e
+	{
+		{
+			HBFGWAS_CAPTURED="$name" DATA_DIR="$DATA_DIR" RUN_DIR="$RUN_DIR" bash "$0" "$@" 2>&1 1>&3 3>&-
+			echo $? >"$tmp/status"
+		} | tee "$tmp/stderr" >&2
+	} 3>&1 | tee "$tmp/stdout"
+	set -e
+	status=$(cat "$tmp/status" 2>/dev/null || echo 1)
+	redact_to "$tmp/stdout" "$RUN_DIR/logs/$name.stdout.txt"
+	redact_to "$tmp/stderr" "$RUN_DIR/logs/$name.stderr.txt"
+	rm -rf "$tmp"
+	exit "$status"
 }
 
 # Value from the pre-registration, e.g. cfg qc.maf
@@ -54,7 +97,10 @@ plink() {
 	"$PLINK2" ${extra[@]+"${extra[@]}"} "$@"
 }
 
-record_plink_version() { "$PLINK2" --version >"$RUN_DIR/plink2_version.txt"; }
+record_plink_version() {
+	"$PLINK2" --version >"$DATA_DIR/plink2_version.txt"
+	redact_to "$DATA_DIR/plink2_version.txt" "$RUN_DIR/plink2_version.txt"
+}
 
 # Refuse to run unless plink2 is the build pinned in the config (review item G):
 # the version string must contain plink2.version and "(plink2.build_date)".
@@ -109,5 +155,5 @@ require_step_e_ready() {
 		die "real_data_simulation.population_shift is not pre-registered in $CONFIG"
 }
 
-# Copy the plink2 log for output prefix $1 into RUN_DIR/logs/.
-save_log() { if [ -f "$1.log" ]; then cp "$1.log" "$RUN_DIR/logs/"; fi; }
+# Copy the plink2 log for output prefix $1 into RUN_DIR/logs/, redacted.
+save_log() { if [ -f "$1.log" ]; then redact_to "$1.log" "$RUN_DIR/logs/$(basename "$1").log"; fi; }

@@ -31,6 +31,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 . "$here/_common.sh"
 need "$PLINK2"
 setup_dirs
+capture_logs "$@"
 check_plink_version
 
 # --- preconditions: nothing below runs unless all of these hold ------------------

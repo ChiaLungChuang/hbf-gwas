@@ -16,6 +16,7 @@ import json
 import sys
 from dataclasses import asdict, dataclass
 
+from hbfgwas import redact
 from hbfgwas.config import load_config
 
 
@@ -186,8 +187,8 @@ def main(argv: list[str] | None = None) -> int:
     failed = any_failed(checks)
     print("\nGATE " + ("FAILED" if failed else "PASSED"))
     if args.out:
-        with open(args.out, "w") as fh:
-            json.dump({"passed": not failed, "checks": [asdict(c) for c in checks]}, fh, indent=2)
+        doc = {"passed": not failed, "checks": [asdict(c) for c in checks]}
+        redact.write_record(args.out, json.dumps(doc, indent=2))
     return 1 if failed else 0
 
 

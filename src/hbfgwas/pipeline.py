@@ -27,7 +27,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from hbfgwas import assoc, power, simulate
+from hbfgwas import assoc, power, redact, simulate
 from hbfgwas.config import load_config
 
 # Review item C (D-028): no proxies; a sentinel absent from the callset or failing QC is
@@ -850,7 +850,9 @@ def build_report(config: dict, data_dir: Path, run_dir: Path, figures: bool = Tr
         py = _python_assoc(raw, pheno, covar)
         res = assoc.compare_to_plink2(py, glm[side], **tol)
         conc[side] = res.to_dict()
-        py.to_csv(run_dir / f"concordance_python_{side}.tsv", sep="\t", index=False)
+        redact.write_record(
+            run_dir / f"concordance_python_{side}.tsv", py.to_csv(sep="\t", index=False)
+        )
     conc["passed"] = all(conc[s]["passed"] for s in ("unadjusted", "adjusted"))
     results["concordance"] = conc
     if redraws is not None:
@@ -1029,7 +1031,7 @@ def main(argv: list[str] | None = None) -> int:
             name, path = s.split("=", 1)
             steps[name] = read_ids(path)
         rep = sentinel_report(smap, afreq, steps)
-        rep.to_csv(a.out, sep="\t", index=False)
+        redact.write_record(a.out, rep.to_csv(sep="\t", index=False))
         cols = ["gene", "rsid", "found_by", "effect_allele_freq", "removed_by", "status"]
         print(rep[cols].to_string(index=False))
     elif a.cmd == "sample-ids":
@@ -1054,7 +1056,7 @@ def main(argv: list[str] | None = None) -> int:
             config, read_raw(a.raw), smap, read_psam(a.psam), a.seed_file
         )
         write_pheno(pheno, a.out)
-        Path(a.meta).write_text(json.dumps(meta, indent=2) + "\n")
+        redact.write_record(a.meta, json.dumps(meta, indent=2) + "\n")
         print(f"simulated phenotype for {meta['n']} samples -> {a.out}")
     elif a.cmd == "predictions":
         config = load_config(a.config)
@@ -1068,7 +1070,7 @@ def main(argv: list[str] | None = None) -> int:
             read_eigenvec(a.eigenvec),
             exclude=[x for x in a.exclude.split(",") if x],
         )
-        Path(a.out).write_text(json.dumps(res, indent=2, default=float) + "\n")
+        redact.write_record(a.out, json.dumps(res, indent=2, default=float) + "\n")
         lam = res["predicted_lambda_gc"]
         for side in ("unadjusted", "pc_adjusted"):
             x = lam[side]
@@ -1097,7 +1099,7 @@ def main(argv: list[str] | None = None) -> int:
             a.seed_file,
             n_redraws=a.n_redraws,
         )
-        Path(a.out).write_text(json.dumps(res, indent=2, default=float) + "\n")
+        redact.write_record(a.out, json.dumps(res, indent=2, default=float) + "\n")
         for gene, r in res["loci"].items():
             lo, hi = r["empirical_power_ci95"]
             print(
@@ -1108,13 +1110,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"wrote {a.out}")
     elif a.cmd == "het-summary":
         s = het_summary(read_table(a.het))
-        s.to_csv(a.out, sep="\t", index=False)
+        redact.write_record(a.out, s.to_csv(sep="\t", index=False))
         print(s.to_string(index=False))
     elif a.cmd == "report":
         config = load_config(a.config)
         res = build_report(config, Path(a.data_dir), Path(a.run_dir), figures=not a.no_figures)
         out = Path(a.run_dir) / "results.json"
-        out.write_text(json.dumps(res, indent=2, default=float) + "\n")
+        redact.write_record(out, json.dumps(res, indent=2, default=float) + "\n")
         print(json.dumps({k: res[k] for k in ("unadjusted", "adjusted")}, indent=2))
         for loc in res["loci_all"]:
             print(loc)
