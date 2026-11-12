@@ -159,3 +159,8 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   this one as the private archive. It covers the exact steps, what is lost
   (issues, PRs, GitHub timestamps, hashes) and the README note, how to verify
   the scrub before any push, and the licence (MIT, chosen by the user, D-045).
+- `docs/handoff.md` (2026-11-12): what is complete from the overnight list
+  and what was skipped and why, the PRs in merge order, every decision
+  waiting for the user, and why step e must not run until its remaining
+  code (real-genotype redraws, sensitivity association, single command)
+  exists.
