@@ -154,3 +154,8 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   sign-off in #30. The status table includes the step d runs (03c, 03d). A
   factual "How this was built" section is added, and stale references are
   updated (#10, the gate on every PR, layout, rebuild command).
+- `docs/publication-plan.md` (plan only, nothing executed): publish at the
+  end as a new public repository from a scrubbed copy of `main`, keeping
+  this one as the private archive. It covers the exact steps, what is lost
+  (issues, PRs, GitHub timestamps, hashes) and the README note, how to verify
+  the scrub before any push, and the licence (MIT, chosen by the user, D-045).
