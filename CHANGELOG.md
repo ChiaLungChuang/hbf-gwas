@@ -176,3 +176,7 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   this one as the private archive. It covers the exact steps, what is lost
   (issues, PRs, GitHub timestamps, hashes) and the README note, how to verify
   the scrub before any push, and the licence (MIT, chosen by the user, D-045).
+- Restack (2026-11-12, the user's request, D-047): the step d
+  pre-registration is now the last PR, after the step e code. The new PRs
+  #38-#44 replace #32-#37 and #36. `docs/handoff.md` is rewritten with the
+  new merge order, which PR replaces which, and the decisions still open.
