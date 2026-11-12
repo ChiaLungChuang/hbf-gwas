@@ -11,6 +11,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 . "$here/_common.sh"
 need "$PLINK2"
 setup_dirs
+capture_logs "$@"
 check_plink_version
 
 in="$DATA_DIR/afr_qc"
@@ -25,7 +26,7 @@ plink --pfile "$in" --keep "$DATA_DIR/unrelated.id" --remove "$DATA_DIR/sens_exc
 	--extract "$DATA_DIR/pca.1_prune.prune.in" --pca "$n_pcs" --out "$p.3"
 save_log "$p.3"
 cp "$p.3.eigenvec" "$DATA_DIR/pca_sens.eigenvec"
-cp "$p.3.eigenval" "$RUN_DIR/sens_pca_eigenval.txt"
+redact_to "$p.3.eigenval" "$RUN_DIR/sens_pca_eigenval.txt"
 n_left=$(count_records "$DATA_DIR/pca_sens.eigenvec")
 printf 'step\tsamples\tvariants\tnote\n' >"$RUN_DIR/sens_pca_counts.tsv"
 printf 'sensitivity_pca\t%s\t%s\tunrelated minus %s; same LD-pruned variants as 03\n' \

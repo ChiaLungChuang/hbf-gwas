@@ -19,6 +19,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 . "$here/_common.sh"
 need "$PLINK2"
 setup_dirs
+capture_logs "$@"
 check_plink_version
 
 in="$DATA_DIR/afr_qc"
@@ -36,7 +37,7 @@ fi
 
 "$PYTHON" -m hbfgwas.pipeline sentinels --pvar "$in.pvar" --loci "$loci" \
 	--out-ids "$DATA_DIR/prereg_ids.txt" --out-map "$DATA_DIR/prereg_map.tsv"
-cp "$DATA_DIR/prereg_map.tsv" "$RUN_DIR/prereg_sentinels.tsv"
+redact_to "$DATA_DIR/prereg_map.tsv" "$RUN_DIR/prereg_sentinels.tsv"
 [ -s "$DATA_DIR/prereg_ids.txt" ] || die "no sentinel is testable in this callset"
 plink --pfile "$in" --keep "$keep" --extract "$DATA_DIR/prereg_ids.txt" --export A \
 	--out "$DATA_DIR/prereg_sentinels"

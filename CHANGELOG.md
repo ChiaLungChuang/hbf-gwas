@@ -136,3 +136,13 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   clean-clone rebuild (`scripts/rebuild.sh`, workflow "Rebuild from a clean
   clone") runs on manual trigger and weekly only. `scripts/ci_scope.py`,
   `tests/test_ci_scope.py`, `docs/ci.md`.
+- Log hygiene (2026-11-12, the user's request before any further real-data
+  run): run records are redacted when they are written (`hbfgwas.redact`).
+  The hostname is removed and absolute paths become repo-relative (or `~`,
+  `[DATA_DIR]`, `[RUN_DIR]`, `[TMP]`, `[user]`). Every script saves its own
+  stdout and stderr into `RUN_DIR/logs/` (`capture_logs`, `redact.capture`).
+  plink2 logs, the download manifest, the plink2 version file, data copies
+  and every Python-written record go through the same filter. Each run
+  directory gets a `REDACTION.md`. Tested end to end on the synthetic fileset:
+  no file in RUN_DIR contains the hostname, the repository, home or temporary
+  paths, or the user name in a path. Records already committed are unchanged.

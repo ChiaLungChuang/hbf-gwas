@@ -14,6 +14,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 . "$here/_common.sh"
 need "$PLINK2"
 setup_dirs
+capture_logs "$@"
 check_plink_version
 
 in="$DATA_DIR/afr_qc"
@@ -52,7 +53,7 @@ n_unrel=$(count_records "$DATA_DIR/unrelated.id")
 n_out=$(count_records "$p.2_king.king.cutoff.out.id")
 printf 'king_unrelated\t%s\t%s\t--king-cutoff %s removed %s samples\n' \
 	"$n_unrel" "$(count_records "$p.1_prune.prune.in")" "$king" "$n_out" >>"$counts"
-cp "$p.2_king.king.cutoff.out.id" "$RUN_DIR/king_removed.id"
+redact_to "$p.2_king.king.cutoff.out.id" "$RUN_DIR/king_removed.id"
 if [ "$n_out" -eq 0 ]; then
 	log "NOTE: --king-cutoff $king removed 0 samples. The 1000 Genomes related-sample list"
 	log "      (second degree, made with --king-cutoff 0.0884 on all 2504 samples) was"
@@ -67,7 +68,7 @@ plink --pfile "$in" --keep "$DATA_DIR/unrelated.id" --extract "$p.1_prune.prune.
 	--pca "$n_pcs" --out "$p.3"
 save_log "$p.3"
 cp "$p.3.eigenvec" "$DATA_DIR/pca.eigenvec"
-cp "$p.3.eigenval" "$RUN_DIR/pca_eigenval.txt"
+redact_to "$p.3.eigenval" "$RUN_DIR/pca_eigenval.txt"
 [ "$(count_records "$p.3.eigenval")" -eq "$n_pcs" ] || die "expected $n_pcs eigenvalues"
 
 plink --pfile "$in" --keep "$DATA_DIR/unrelated.id" --extract "$p.1_prune.prune.in" --het --out "$p.4"

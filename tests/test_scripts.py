@@ -387,6 +387,49 @@ def test_e2e_every_plink2_log_is_kept(e2e):
         assert expected in logs, sorted(logs)
 
 
+def test_e2e_run_records_are_redacted_at_write_time(e2e):
+    from hbfgwas import redact
+
+    run, tmp = e2e["run"], e2e["tmp"]
+    forbidden = {str(tmp), os.path.realpath(tmp), str(ROOT), str(Path.home())}
+    forbidden |= set(redact.local_hostnames())
+    user = redact.local_user()
+    checked = 0
+    for f in sorted(run.rglob("*")):
+        if not f.is_file() or f.suffix == ".png":
+            continue
+        text = f.read_text(errors="replace")
+        for s in forbidden:
+            assert s not in text, (f.relative_to(run), s)
+        assert not re.search(r"/(Users|home)/(?!\[user\])", text), f.relative_to(run)
+        if user:
+            for token in re.findall(r"/[^\s\"'`]+", text):
+                assert not re.search(rf"(?<![A-Za-z0-9]){re.escape(user)}(?![A-Za-z0-9])", token)
+        checked += 1
+    assert checked > 30
+    assert (run / redact.NOTE_FILE).exists()
+    logs = run / "logs"
+    for script in e2e["out"]:
+        name = script.rsplit(".", 1)[0]
+        assert (logs / f"{name}.stdout.txt").exists(), name
+        assert (logs / f"{name}.stderr.txt").exists(), name
+    plink_logs = "".join(p.read_text() for p in logs.glob("*.log"))
+    assert "Hostname: [redacted]" in plink_logs
+    assert "Working directory: .\n" in plink_logs  # the scripts ran from the repository
+    assert "[DATA_DIR]/afr" in plink_logs  # DATA_DIR is outside the repository here
+
+
+def test_e2e_captured_logs_are_what_the_script_printed_redacted(e2e):
+    from hbfgwas import redact
+
+    aliases = {"DATA_DIR": e2e["data"], "RUN_DIR": e2e["run"]}
+    r = e2e["out"]["02_qc.sh"]
+    logs = e2e["run"] / "logs"
+    assert (logs / "02_qc.stderr.txt").read_text() == redact.redact_text(r.stderr, aliases=aliases)
+    assert (logs / "02_qc.stdout.txt").read_text() == redact.redact_text(r.stdout, aliases=aliases)
+    assert "missingness" in (logs / "02_qc.stderr.txt").read_text()
+
+
 def test_e2e_prereg_predictions_before_any_phenotype(e2e):
     # review item H: predicted lambda and conditional power exist before 04 runs
     pred = json.loads((e2e["run"] / "prereg_predictions.json").read_text())
