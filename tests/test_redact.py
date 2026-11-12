@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REPO = "/Users/alice/projects/hbf-gwas"
 KW = {
     "root": REPO,
-    "hostnames": ["EU-L240321"],
+    "hostnames": ["lab-mac-01"],
     "home": "/Users/alice",
     "user": "alice",
     "tmp": ["/var/folders/xy/T"],
@@ -31,7 +31,7 @@ Options in effect:
   --out {REPO}/data/1kg/qc.1_geno
   --pfile {REPO}/data/1kg/afr
 
-Hostname: EU-L240321
+Hostname: lab-mac-01
 Working directory: {REPO}
 Start time: Wed Nov 11 17:50:01 2026
 """
@@ -42,7 +42,7 @@ def test_plink2_log_loses_hostname_and_absolute_paths():
     assert "Hostname: [redacted]" in out
     assert "Working directory: .\n" in out
     assert "--out data/1kg/qc.1_geno" in out and "--pfile data/1kg/afr" in out
-    assert "EU-L240321" not in out and "/Users/" not in out and "alice" not in out
+    assert "lab-mac-01" not in out and "/Users/" not in out and "alice" not in out
     # everything else is as produced
     assert "PLINK v2.0.0-b.1.4 64-bit (7 Nov 2026)" in out
     assert "Start time: Wed Nov 11 17:50:01 2026" in out
@@ -51,7 +51,7 @@ def test_plink2_log_loses_hostname_and_absolute_paths():
 @pytest.mark.parametrize(
     ("text", "want"),
     [
-        ("ran on EU-L240321 today", "ran on [host] today"),
+        ("ran on lab-mac-01 today", "ran on [host] today"),
         (f"{REPO}/runs/2026-11-12/x.json", "runs/2026-11-12/x.json"),
         (f"cd {REPO} && ls", "cd . && ls"),
         (f"'{REPO}/config/analysis.yaml'", "'config/analysis.yaml'"),
@@ -100,7 +100,7 @@ def test_short_names_are_never_replaced():
 
 
 def test_redaction_is_idempotent_and_keeps_json_valid():
-    doc = {"config_path": f"{REPO}/config/analysis.yaml", "lambda": 1.3422, "host": "EU-L240321"}
+    doc = {"config_path": f"{REPO}/config/analysis.yaml", "lambda": 1.3422, "host": "lab-mac-01"}
     once = redact.redact_text(json.dumps(doc, indent=2), **KW)
     assert redact.redact_text(once, **KW) == once
     parsed = json.loads(once)
@@ -132,10 +132,10 @@ def test_cli_writes_a_redacted_copy_and_the_note(tmp_path):
 
 def test_capture_shows_and_saves_redacted_output(tmp_path, capsys):
     with redact.capture(tmp_path, "step", **KW):
-        print(f"wrote {REPO}/runs/x.json on EU-L240321")
+        print(f"wrote {REPO}/runs/x.json on lab-mac-01")
         print("warning", file=sys.stderr)
     shown = capsys.readouterr()
-    assert shown.out == f"wrote {REPO}/runs/x.json on EU-L240321\n"  # terminal unchanged
+    assert shown.out == f"wrote {REPO}/runs/x.json on lab-mac-01\n"  # terminal unchanged
     assert shown.err == "warning\n"
     assert (tmp_path / "logs" / "step.stdout.txt").read_text() == "wrote runs/x.json on [host]\n"
     assert (tmp_path / "logs" / "step.stderr.txt").read_text() == "warning\n"
