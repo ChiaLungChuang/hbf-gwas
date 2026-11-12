@@ -1,15 +1,36 @@
 # hbf-gwas
 
-**What this claims, and what it does not.** This is a small, tested GWAS QC
-and association pipeline. Its only claim is: *on real 1000 Genomes AFR
-genotypes, with an HbF-like phenotype simulated at the three established HbF
-modifier loci (BCL11A 2p16, HBS1L-MYB 6q23, HBB cluster 11p15), the pipeline
-recovers planted effects at the power predicted in advance, with calibrated
-type I error after ancestry adjustment.* **The phenotype is always
-simulated.** 1000 Genomes has no HbF (fetal haemoglobin) phenotype, so
-nothing here is a biological finding or says anything new about HbF; the
-literature effect sizes are only used to decide how large the planted
-effects should be.
+**What this is designed to test, and what it does not.** This is a small,
+tested GWAS QC and association pipeline. It is built to test one narrow
+claim: *on real 1000 Genomes AFR genotypes, with an HbF-like phenotype
+simulated at established HbF modifier loci, the pipeline recovers planted
+effects at the power predicted in advance, with calibrated type I error after
+ancestry adjustment.* **That test has not been run yet.** So far:
+
+* the pipeline has passed its pre-registered criteria on simulated genotypes
+  (sim-v3);
+* the QC and PCA steps have run on the real genotypes;
+* the real-data criteria are proposed and await approval.
+
+The real-data association runs only after the criteria are approved and
+tagged. **The phenotype is always simulated.** 1000 Genomes has no HbF (fetal
+haemoglobin) phenotype, so nothing here is a biological finding or says
+anything new about HbF. The literature effect sizes only set how large the
+planted effects are.
+
+**Two of the three loci can be tested in this callset.** The brief names
+three loci: BCL11A (2p16), HBS1L-MYB (6q23) and the HBB cluster (11p15).
+
+* **BCL11A** (rs1427407) and **HBS1L-MYB** (rs9399137) are in the 1000
+  Genomes phase 3 callset and pass QC, so they are testable.
+* **HBB cluster** is not testable: its sentinel, rs7482144 (XmnI), is absent
+  from the phase 3 callset, looked up both by ID and by position
+  (`runs/2026-11-11/`).
+
+The rule written before any real data (D-028) forbids choosing a proxy
+variant after seeing the data. The HBB cluster is therefore reported as "not
+testable in this callset" and is in no real-data criterion. The simulated
+experiment still plants all three.
 
 ## Status
 
@@ -27,10 +48,11 @@ column changes only when the pipeline has actually been run on 1000 Genomes.
 | `02_qc.sh` per-filter QC table, sentinel report | synthetic fileset, in CI | **ran 2026-11-11**: 14,698,808 variants after QC; BCL11A and HBS1L-MYB testable, HBB cluster not testable in this callset (rs7482144 absent from 1000 Genomes phase 3) |
 | `03_pca.sh` long-range LD exclusion, pruning, KING, exact PCA, het | synthetic fileset, in CI | **ran 2026-11-11**: 215,522 pruned variants, KING removed 0, 10 PCs |
 | `03b_pc_plot.py` PC1 vs PC2 by the seven AFR populations | synthetic fileset, in CI | **ran 2026-11-11** ([plot](runs/2026-11-11/pc1_pc2_by_population.png)) |
-| `03c_prereg_predictions.sh` predicted lambda_GC and conditional power, before any phenotype | synthetic fileset, in CI | not yet run |
+| `03c_prereg_predictions.sh` predicted lambda_GC and conditional power, before any phenotype | synthetic fileset, in CI | **ran 2026-11-12** (step d, no phenotype drawn): predictions for the **proposed** real-data criteria real-v1 ([run](runs/2026-11-12-stepd/README.md)); approval pending |
+| `03d_sensitivity_pca.sh` PCA without NA20314 (sensitivity, never gated) | synthetic fileset, in CI | **ran 2026-11-12** (step d) |
 | `04_assoc.sh` simulated phenotype on the genotypes, plink2 `--glm` ± PCs | synthetic fileset, in CI | not yet run |
 | `05_report.py` report and Python-vs-plink2 concordance | synthetic fileset, in CI | not yet run |
-| Locus table values (`src/hbfgwas/loci.py`) | all `verified: false`; awaiting user sign-off (#3) | n/a |
+| Locus table values (`src/hbfgwas/loci.py`) | signed off for the analysis on 2026-11-12 (#3): every field the analysis uses (position, alleles, effect size, frequency) is verified or superseded by a measured value. Of the 39 checklist rows, 20 are verified (each records who checked it: the user by hand, the reviewer, or the step c run), 2 are superseded and 17 are not covered (citations, cohorts, reference-panel frequencies). See [docs/locus-signoff.md](docs/locus-signoff.md) | n/a |
 
 ## Pre-registration history (simulated genotypes)
 
@@ -46,7 +68,10 @@ version's seed is pre-registered.
 | sim-v2 | after the Phase 1 review (#10): power predicted conditional on the realised genotypes; 2000 redraws; a proposed 0.05 calibration criterion. Claude also switched to planting the table's per-allele effect (D-022), which made HBS1L-MYB REQUIRED at predicted power 0.809 | `df3b117` | **failed**: power calibration agreed at all loci (within 0.011), but HBS1L-MYB, REQUIRED at 0.809, was missed in the single scan (p = 1.2e-6 > 5e-8) ([run](runs/2026-11-10-sim-v2/README.md), #14) |
 | sim-v3 | criteria amended **after the failed sim-v2 result** (#14, D-024): a single scan is one Bernoulli draw per locus, and a "required at 0.8" rule fails a correct pipeline about 19% of the time at power 0.81. Gated: lambda_GC and type I error as before; \|empirical - predicted\| power <= 0.05 per locus over 2000 redraws; a locus with conditional predicted power >= 0.99 must reach p < 5e-8 in the single scan. Every other locus's single-scan hit or miss is reported next to its predicted power, not gated | criteria #17 (on `main` via #18); seed `c2ca787` and predictions `88d4530`, each pushed before the run | **passed**: lambda_GC 1.342 → 0.998, type I error 0.0505, BCL11A (0.996, required) hit at p = 3.4e-9, calibration within 0.013 at every locus ([run](runs/2026-11-11-sim-v3/README.md)) |
 
-The real-data pre-registration (Phase 2 step d) uses the sim-v3 rule.
+The real-data pre-registration (Phase 2 step d) uses the sim-v3 rule. Its
+criteria (**real-v1**) are proposed in `config/analysis.yaml`
+`acceptance.real` and take effect only when the user merges them and the
+merge commit is tagged `prereg-v1`.
 
 The figure below is from **sim-v3**, the current criteria version.
 
@@ -61,8 +86,10 @@ Fst 0.01) and simulated phenotype. Summary numbers:
 1. **Pre-registration first.** `config/analysis.yaml` fixes QC thresholds, 10
    PCs, alpha = 5e-8, seeds, planted effects, and the acceptance criteria
    before any experiment runs. `tests/test_config.py` pins every value the
-   brief specifies, and amendments the user made later. Real-data criteria are added later and tagged `prereg-v1`
-   before any real association is run; `scripts/04_assoc.sh` checks the tag.
+   brief specifies, and the amendments the user made later. Real-data
+   criteria are added in step d and tagged `prereg-v1` before any real
+   association runs; `scripts/04_assoc.sh` checks the tag and refuses an
+   empty step e seed.
 2. **Predicted power.** `hbfgwas.power` is the analytic 1-df noncentral
    chi-square (ncp = n R2 / (1 - R2)). `hbfgwas.predict.conditional_power` is
    what the criteria use since sim-v2: power of the actual t-test given the
@@ -81,8 +108,10 @@ Fst 0.01) and simulated phenotype. Summary numbers:
    scan; this module is the tested reference it is compared with.
 5. **Gate** (`python -m hbfgwas.gate`): PASS / FAIL for each gated criterion,
    REPORTED for results shown but not gated. CI re-runs the current version of
-   the simulated experiment and the gate on every PR, so a statistical
-   regression breaks the build.
+   the simulated experiment and the gate before every merge to main (every
+   pull request that can be merged, and every push to main), so a
+   statistical regression breaks the build. What runs when:
+   [docs/ci.md](docs/ci.md).
 
 **1000 Genomes phase 3 is fully called** (no missing genotype calls), so the
 missingness filters `--geno 0.02` and `--mind 0.02` cannot remove anything;
@@ -113,6 +142,8 @@ records with no heterozygotes are kept.
 
 The stratification run takes a few seconds and reproduces
 `docs/figures/sim_stratification_summary.json` (CI checks this).
+`scripts/rebuild.sh` does all of it in one command from a clean clone of the
+committed HEAD, with a fresh virtualenv (CI runs it weekly and on demand).
 `pytest -m realdata` is expected to **fail** until the locus table is signed
 off. To exercise the shell scripts locally, put `plink2` and `zstd` on PATH
 and run `pytest tests/test_scripts.py`.
@@ -128,15 +159,32 @@ no ancestries other than 1000 Genomes AFR.
 
 | Path | What |
 |---|---|
-| `src/hbfgwas/` | `loci`, `power`, `simulate`, `assoc`, `gate`, `experiment`, `pipeline`, `config` |
+| `src/hbfgwas/` | `loci`, `signoff`, `power`, `predict`, `simulate`, `assoc`, `gate`, `experiment`, `pipeline`, `redact`, `config` |
 | `config/analysis.yaml` | pre-registration |
-| `scripts/` | `00`-`05` real-data pipeline (with `03b_pc_plot.py`, `03c_prereg_predictions.sh`), `run_stratification.py`, `check_language.py` |
+| `scripts/` | `00`-`05` real-data pipeline (with `03b_pc_plot.py`, `03c_prereg_predictions.sh`, `03d_sensitivity_pca.sh`), `run_stratification.py`, `rebuild.sh`, `check_language.py`, `ci_scope.py` |
 | `resources/` | long-range LD regions (GRCh37), with source and verification status |
-| `runs/<date>/` | committed documentation of each run |
-| `docs/` | brief, decisions, walkthrough, figures |
+| `runs/<date>/` | committed documentation of each run (redacted at write time since 2026-11-12: no hostname, repo-relative paths) |
+| `docs/` | brief, decisions, walkthrough, power, CI, locus sign-off, figures |
 | `tests/` | unit tests, synthetic plink2 fileset, end-to-end script tests |
 
-Open decisions for the user: sign-off of the locus table (#3) and the
-secondary power outcome (#10). Decisions and who made them:
-[docs/decisions.md](docs/decisions.md).
-Changes: [CHANGELOG.md](CHANGELOG.md). The brief: [docs/BRIEF.md](docs/BRIEF.md).
+Decisions and who made them: [docs/decisions.md](docs/decisions.md).
+Changes: [CHANGELOG.md](CHANGELOG.md). Open decisions are in the open GitHub
+issues and in [docs/handoff.md](docs/handoff.md).
+
+## How this was built
+
+* **Code, tests and documentation:** written by Claude Code (Anthropic's
+  coding agent) under the direction of Chia-Lung Chuang. The original
+  instructions are in [docs/BRIEF.md](docs/BRIEF.md).
+* **Design decisions, approvals and the locus sign-off:** by Chia-Lung
+  Chuang, including the approval of each pre-registration and each change
+  to the criteria. Two exceptions are recorded in
+  [docs/decisions.md](docs/decisions.md), which also records who made every
+  other decision:
+  * D-022, a change to what is simulated, was made by Claude and approved
+    only afterwards (D-027);
+  * D-036, a PCA allele-frequency filter Claude added, still awaits
+    approval.
+* **Review:** by Claude in a separate chat. Some locus values were checked
+  by that reviewer rather than by hand. [docs/locus-signoff.md](docs/locus-signoff.md)
+  records who checked each row.

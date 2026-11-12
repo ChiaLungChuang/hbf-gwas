@@ -146,3 +146,11 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   directory gets a `REDACTION.md`. Tested end to end on the synthetic fileset:
   no file in RUN_DIR contains the hostname, the repository, home or temporary
   paths, or the user name in a path. Records already committed are unchanged.
+- README (2026-11-12, the user's request): the first paragraph now states
+  the claim as what the pipeline is designed to test, and says the real-data
+  test has not run yet. It says two of the three loci are testable in this
+  callset, and why the HBB cluster is not (rs7482144 absent, no proxy
+  chosen after seeing data, D-028). The locus-table row reflects the
+  sign-off in #30. The status table includes the step d runs (03c, 03d). A
+  factual "How this was built" section is added, and stale references are
+  updated (#10, the gate on every PR, layout, rebuild command).
