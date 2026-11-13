@@ -140,7 +140,12 @@ RUN_DIR=runs/$(date -u +%Y-%m-%d)-stepe PYTHON=.venv/bin/python scripts/step_e.s
 - the step e seed is filled;
 - the population shift is declared;
 - the PCA (03) and the sensitivity PCA (03d) exist;
-- `$RUN_DIR/results.json` does not exist yet (step e runs once).
+- `$RUN_DIR/results.json` does not exist yet (step e runs once);
+- **integrity check:** each locus's conditional power and the predicted
+  lambda_GC, recomputed from the genotypes (03c, primary only, into
+  `$RUN_DIR/integrity/`), equal the values declared in `acceptance.real`
+  within 1e-4. The result is in `$RUN_DIR/integrity_check.json`. This is not
+  an acceptance criterion (D-057).
 
 It then runs, in order:
 - `04_assoc.sh`: simulated phenotype; plink2 `--glm` without and with the 10 PCs; concordance subset.

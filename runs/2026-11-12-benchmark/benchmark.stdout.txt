@@ -1,0 +1,11 @@
+setup: plink2 --dummy             8.7 s      976 MB     1720.3 MB written
+integrity: export 20,000 null      2.1 s     1034 MB       25.1 MB written
+integrity: predictions           83.6 s     1084 MB        0.0 MB written
+04: --glm, no covariates          6.3 s      908 MB     1244.9 MB written
+04: --glm, 10 PCs                10.0 s     1017 MB     1244.8 MB written
+04: concordance export            0.7 s     1002 MB        2.5 MB written
+04b: 2000 redraws                 1.8 s      173 MB        0.0 MB written
+05: report                      321.2 s     2468 MB        0.1 MB written
+wrote [TMP]/claude-502/-Users-[user]-projects-hbf-gwas/3658bf88-4d8e-43b8-8afe-16ca282d17c7/scratchpad/bench-out/benchmark.json
+step e expected: 7.4 min, peak 2468 MB, 5.25 GB written
+exit 0

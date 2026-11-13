@@ -146,6 +146,10 @@ The stratification run takes a few seconds and reproduces
 `docs/figures/sim_stratification_summary.json` (CI checks this).
 `scripts/rebuild.sh` does all of it in one command from a clean clone of the
 committed HEAD, with a fresh virtualenv (CI runs it weekly and on demand).
+Every dependency is pinned in `requirements/constraints.txt`, with separate
+versions for Python 3.11 and 3.12. Step e takes about 8 to 10 minutes on a
+16 GB Mac, peaks at about 2.5 GB of memory and writes about 5.3 GB
+(`runs/2026-11-12-benchmark/`, simulated genotypes of the real size).
 `pytest -m realdata` is expected to **fail** until the locus table is signed
 off. To exercise the shell scripts locally, put `plink2` and `zstd` on PATH
 and run `pytest tests/test_scripts.py`.
@@ -156,6 +160,18 @@ Real data: see [docs/running-real-data.md](docs/running-real-data.md).
 
 No mixed models (REGENIE, SAIGE), no imputation, no fine-mapping, no GRCh38,
 no ancestries other than 1000 Genomes AFR.
+
+## Limitations
+
+**Founders and non-founders (D-056).**
+- plink2's default founders-only behaviour is kept. The frequency-based steps
+  (QC MAF and HWE filters, the sentinel allele frequencies, the PCA MAF filter,
+  LD pruning and the PCA's frequency estimates) use the 651 founders. KING, the
+  PC scores, the step d predictions and step e use all 652.
+- The one non-founder, NA20320, is a non-founder because its mother NA20321 was
+  removed by the 1000 Genomes related list.
+- The mismatch is one sample in 652 and does not affect any gated criterion,
+  because the predictions and step e share the same variant set and PCs.
 
 ## Layout
 
