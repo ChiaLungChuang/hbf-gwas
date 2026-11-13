@@ -197,3 +197,22 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   pre-registration is now the last PR, after the step e code. The new PRs
   #38-#44 replace #32-#37 and #36. `docs/handoff.md` is rewritten with the
   new merge order, which PR replaces which, and the decisions still open.
+- Review decisions (2026-11-12, by the user, before any real-data
+  phenotype; D-051 to D-056, D-060):
+  - the lambda interval and its pass probability accepted;
+  - D-049's assumptions accepted;
+  - flag 2 unchanged;
+  - D-034 and D-036 (Claude's decisions) approved;
+  - D-037 approved as is (a README limitation now states it);
+  - full CI on main kept;
+  - reporting figures, the claims audit and publication decisions deferred
+    until after step e; the reviewer summary dropped.
+- Step e integrity check (D-057): `step_e.sh` recomputes the declared
+  predictions (03c, primary only; `PREREG_SKIP_SENSITIVITY=1`) and
+  `pipeline check-declared` stops it before any phenotype if any differs by
+  more than 1e-4.
+- Pinned dependencies (D-058): `requirements/constraints.txt` for Python
+  3.11 and 3.12, used by CI, the plink2 action and `rebuild.sh`, and checked
+  by `tests/test_dependencies.py`.
+- Step e benchmark on simulated genotypes of the real size (D-059):
+  `scripts/benchmark_step_e.py`, `runs/2026-11-12-benchmark/`.

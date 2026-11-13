@@ -13,7 +13,10 @@
 #   * the population shift is declared;
 #   * the PCA (03) and, if samples are excluded for the sensitivity analysis,
 #     the sensitivity PCA (03d) have been run;
-#   * RUN_DIR has no results.json yet (step e runs once).
+#   * RUN_DIR has no results.json yet (step e runs once);
+#   * integrity check: each locus's conditional power and the predicted lambda_GC,
+#     recomputed from the genotypes (03c), equal the values declared in
+#     acceptance.real (within 1e-4). Not an acceptance criterion.
 # Then it runs, in order:
 #   04_assoc.sh            simulated phenotype; plink2 --glm without and with the PCs
 #   04b_power_redraws.sh   redraws at the sentinels (acceptance.real.power_calibration)
@@ -52,9 +55,20 @@ if [ "$(cfg sensitivity.exclude_samples)" != "[]" ] && [ "$(cfg sensitivity.excl
 	[ -s "$DATA_DIR/pca_sens.eigenvec" ] ||
 		die "no $DATA_DIR/pca_sens.eigenvec: run 03d_sensitivity_pca.sh first"
 fi
-log "step e preconditions hold; running 04, 04b, 04c, 05 and the gate into $RUN_DIR"
-
 export PYTHON PLINK2 CONFIG DATA_DIR RUN_DIR
+
+# --- integrity check, still before any phenotype ---------------------------------
+# Recompute each locus's conditional power and the predicted lambda_GC from the
+# genotypes (03c, primary analysis only) and stop if any differs from the value
+# declared in acceptance.real. Not an acceptance criterion (D-057).
+log "integrity check: recomputing the declared predictions from the genotypes (no phenotype)"
+RUN_DIR="$RUN_DIR/integrity" PREREG_SKIP_SENSITIVITY=1 bash "$here/03c_prereg_predictions.sh"
+"$PYTHON" -m hbfgwas.pipeline check-declared --config "$CONFIG" \
+	--predictions "$RUN_DIR/integrity/prereg_predictions.json" \
+	--out "$RUN_DIR/integrity_check.json" ||
+	die "integrity check failed: the recomputed predictions differ from the declared values ($RUN_DIR/integrity_check.json); no phenotype was drawn"
+log "integrity check passed; running 04, 04b, 04c, 05 and the gate into $RUN_DIR"
+
 bash "$here/04_assoc.sh"
 bash "$here/04b_power_redraws.sh"
 if [ -s "$DATA_DIR/pca_sens.eigenvec" ]; then

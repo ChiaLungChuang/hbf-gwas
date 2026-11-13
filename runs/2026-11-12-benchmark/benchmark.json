@@ -1,0 +1,100 @@
+{
+  "what": "step e benchmark on SIMULATED genotypes (plink2 --dummy); no real data",
+  "seed": 20261114,
+  "samples": 652,
+  "variants": 14698808,
+  "machine": {
+    "platform": "macOS-27.2-arm64-arm-64bit",
+    "processor": "arm",
+    "cpu_count": 8
+  },
+  "plink2": "PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)",
+  "steps": [
+    {
+      "step": "setup: plink2 --dummy",
+      "seconds": 8.7,
+      "peak_memory_mb": 976,
+      "output_bytes": 1803886678,
+      "outputs": [
+        "dummy.pgen",
+        "dummy.pvar",
+        "dummy.psam"
+      ]
+    },
+    {
+      "step": "integrity: export 20,000 null",
+      "seconds": 2.1,
+      "peak_memory_mb": 1034,
+      "output_bytes": 26360604,
+      "outputs": [
+        "null.raw"
+      ]
+    },
+    {
+      "step": "integrity: predictions",
+      "seconds": 83.6,
+      "peak_memory_mb": 1084,
+      "output_bytes": 0,
+      "outputs": []
+    },
+    {
+      "step": "04: --glm, no covariates",
+      "seconds": 6.3,
+      "peak_memory_mb": 908,
+      "output_bytes": 1305349808,
+      "outputs": [
+        "glm_nopc.PHENO1.glm.linear"
+      ]
+    },
+    {
+      "step": "04: --glm, 10 PCs",
+      "seconds": 10.0,
+      "peak_memory_mb": 1017,
+      "output_bytes": 1305298140,
+      "outputs": [
+        "glm_pc.PHENO1.glm.linear"
+      ]
+    },
+    {
+      "step": "04: concordance export",
+      "seconds": 0.7,
+      "peak_memory_mb": 1002,
+      "output_bytes": 2650142,
+      "outputs": [
+        "concord.raw"
+      ]
+    },
+    {
+      "step": "04b: 2000 redraws",
+      "seconds": 1.8,
+      "peak_memory_mb": 173,
+      "output_bytes": 0,
+      "outputs": []
+    },
+    {
+      "step": "05: report",
+      "seconds": 321.2,
+      "peak_memory_mb": 2468,
+      "output_bytes": 66250,
+      "outputs": [
+        "qq.png"
+      ]
+    }
+  ],
+  "assumed_not_run": {
+    "04c: two scans without one sample": {
+      "seconds": 16.3,
+      "output_bytes": 2610647948,
+      "basis": "the same as 04's two scans (651 instead of 652 samples)"
+    }
+  },
+  "step_e_expected": {
+    "seconds": 442.0,
+    "minutes": 7.4,
+    "peak_memory_mb": 2468,
+    "disk_written_bytes": 5250372892,
+    "disk_written_gb": 5.25,
+    "excludes": "the genotype files themselves (already on disk after step c)"
+  },
+  "setup_fileset_bytes": 1803886678
+}
