@@ -466,7 +466,9 @@ def prereg_predictions(
     if np.isnan(pcs).any():
         raise ValueError("some exported samples have no PCs")
     seq = np.random.SeedSequence(int(config["seeds"]["real_prediction"]))
-    power_seed, lambda_seed = seq.spawn(2)
+    # children 0 and 1 are those of the original step d run (spawn(2)); child 2
+    # draws the null-statistic distribution added in the step d amendment
+    power_seed, lambda_seed, null_seed = seq.spawn(3)
     svec = None
     if fixed is not None:
         missing = sorted(set(pops.astype(str)) - set(fixed))
@@ -508,8 +510,15 @@ def prereg_predictions(
             rng=np.random.default_rng(lambda_seed),
             shift=svec,
         )
+    null_dist, pass_prob = None, None
+    if svec is not None:
+        null_dist, pass_prob = _null_distribution_and_pass_probabilities(
+            config, geno, betas, svec, pops.to_numpy(), pcs, null, power_out, null_seed
+        )
     return {
         "computed_before_any_phenotype": True,
+        "null_distribution": null_dist,
+        "pass_probability": pass_prob,
         "n_samples": int(len(raw_sentinels.iid)),
         "excluded_samples": exclude,
         "alpha": alpha,
@@ -526,6 +535,111 @@ def prereg_predictions(
         "predicted_lambda_gc": lam,
         "n_null_variants": int(null.shape[1]),
     }
+
+
+def _null_distribution_and_pass_probabilities(
+    config, geno, betas, svec, pops, pcs, null, power_out, seed
+) -> tuple[dict, dict]:
+    """The step d amendment: predictive distribution of the null statistics, and the
+    probability that a correct pipeline passes each gated criterion.
+
+    The fixed part of the step e phenotype is planted effects + the declared shift;
+    the noise variance is the one simulate_phenotype uses. The noise is projected
+    on the population indicators and the PCs exactly
+    (``predict.predicted_null_distribution``).
+    """
+    from hbfgwas import predict
+
+    pcfg = config["prediction"]
+    betas = np.asarray(betas, dtype=float)
+    noise_var = predict.noise_variance(geno, betas, shift_var_fraction=float(svec.var()))
+    labels = sorted(set(map(str, pops)))
+    indicators = (np.asarray(pops, dtype=str)[:, None] == np.array(labels)[None, :]).astype(float)
+    nd = predict.predicted_null_distribution(
+        null,
+        geno @ betas + svec,
+        noise_var,
+        np.hstack([indicators, pcs]),
+        pcs,
+        n_draws=int(pcfg.get("null_draws", 2000)),
+        rng=np.random.default_rng(seed),
+        n_effective=pcfg.get("n_effective_variants"),
+    )
+    crit = config["acceptance"].get("real") or {}
+    sim = config["acceptance"]["simulated"]
+    adj = crit.get("adjusted_lambda_gc") or sim["adjusted_lambda_gc"]
+    t1b = crit.get("adjusted_type1_error") or sim["adjusted_type1_error"]
+    cal = crit.get("power_calibration") or sim["power_calibration"]
+    n_redraws = int(cal.get("n_redraws", 2000))
+    tol = float(cal["max_abs_diff"])
+    u, a = nd["unadjusted"], nd["pc_adjusted"]
+    lo_u, hi_u = u["lambda_gc"]["q01"], u["lambda_gc"]["q99"]
+
+    probs = {
+        "unadjusted_lambda_gc_in_q01_q99": float(
+            np.mean((u["lambda_obs"] >= lo_u) & (u["lambda_obs"] <= hi_u))
+        ),
+        "adjusted_lambda_gc": predict.prob_in_interval(
+            a["lambda_draws"], a["lambda_sd"], adj.get("at_least"), adj.get("at_most")
+        ),
+        "adjusted_type1_error": predict.prob_in_interval(
+            a["type1_draws"], a["type1_sd"], t1b.get("at_least"), t1b.get("at_most")
+        ),
+    }
+    joint_null = float(
+        np.mean(
+            (u["lambda_obs"] >= lo_u)
+            & (u["lambda_obs"] <= hi_u)
+            & (a["lambda_obs"] >= adj["at_least"])
+            & (a["lambda_obs"] <= adj["at_most"])
+            & (a["type1_obs"] >= t1b["at_least"])
+            & (a["type1_obs"] <= t1b["at_most"])
+        )
+    )
+    calib = {}
+    model_err = float(pcfg.get("power_model_error", 0.013))
+    for gene, pw in power_out.items():
+        pred = round(float(pw["pc_adjusted"]["power"]), 4)
+        worst = min(
+            predict.prob_calibration_passes(min(max(pred + d, 0.0), 1.0), pred, n_redraws, tol)
+            for d in np.linspace(-model_err, model_err, 27)
+        )
+        calib[gene] = {
+            "predicted_power": pred,
+            "if_prediction_exact": predict.prob_calibration_passes(pred, pred, n_redraws, tol),
+            f"worst_if_true_power_within_{model_err}": worst,
+        }
+    joint = joint_null
+    for c in calib.values():
+        joint *= c["if_prediction_exact"]
+    pass_prob = {
+        "per_criterion": probs,
+        "power_calibration": calib,
+        "all_gated_criteria": joint,
+        "bounds_used": {
+            "unadjusted_lambda_gc": {"at_least": lo_u, "at_most": hi_u},
+            "adjusted_lambda_gc": adj,
+            "adjusted_type1_error": t1b,
+            "power_calibration": {"max_abs_diff": tol, "n_redraws": n_redraws},
+        },
+        "method": (
+            "lambda and type I: the predictive distribution of the observed statistics "
+            "(predict.predicted_null_distribution); power calibration: Binomial(n_redraws, "
+            "p) with p the conditional prediction, and the worst case with the true power "
+            "off by up to power_model_error (the largest gap seen in sim-v2 and sim-v3)"
+        ),
+    }
+    summary = {k: v for k, v in nd.items() if k not in ("unadjusted", "pc_adjusted")} | {
+        side: {
+            "lambda_gc": nd[side]["lambda_gc"],
+            "type1_error": nd[side]["type1_error"],
+            "bootstrap_sd": nd[side]["bootstrap_sd"],
+            "lambda_estimation_sd_median": float(np.median(nd[side]["lambda_sd"])),
+            "lambda_without_estimation_noise": predict._quantile_summary(nd[side]["lambda_draws"]),
+        }
+        for side in ("unadjusted", "pc_adjusted")
+    }
+    return summary, pass_prob
 
 
 def write_pheno(df: pd.DataFrame, path) -> None:
@@ -594,6 +708,67 @@ def _python_assoc(raw: RawGenotypes, pheno: pd.DataFrame, covar: np.ndarray | No
     res = assoc.linear_assoc(raw.genotypes, y, covar).to_frame(ids=raw.ids)
     res["A1"] = raw.counted
     return res
+
+
+# --- step e integrity check: the declared predictions, recomputed -----------------
+
+INTEGRITY_TOL = 1e-4  # declared values are rounded to 4 decimals (error <= 5e-5)
+
+
+def _recomputed_lambda(pred: dict, side: str, key: str) -> float | None:
+    """The recomputed lambda_GC quantile, from the method that produced the declared one.
+
+    The step d amendment declares quantiles of the predictive distribution of the
+    observed value (``null_distribution``); earlier predictions declared the
+    ``predicted_lambda_gc`` summary. The newer one is used when it exists.
+    """
+    nd = (pred.get("null_distribution") or {}).get(side)
+    if nd and key in nd["lambda_gc"]:
+        return float(nd["lambda_gc"][key])
+    old = (pred.get("predicted_lambda_gc") or {}).get(side) or {}
+    return float(old[key]) if key in old else None
+
+
+def check_declared(config: dict, pred: dict, tol: float = INTEGRITY_TOL) -> dict:
+    """Compare predictions recomputed from the genotypes with those declared in
+    ``acceptance.real`` (each locus's conditional power, and the predicted
+    lambda_GC). An integrity check run before any phenotype is drawn; it is not
+    an acceptance criterion.
+    """
+    real = config["acceptance"].get("real") or {}
+    rows = []
+
+    def row(name, declared, recomputed):
+        ok = recomputed is not None and abs(float(declared) - recomputed) <= tol
+        rows.append(
+            {
+                "name": name,
+                "declared": float(declared),
+                "recomputed": recomputed,
+                "difference": None if recomputed is None else recomputed - float(declared),
+                "ok": bool(ok),
+            }
+        )
+
+    cp = pred.get("conditional_power") or {}
+    for gene, value in (real.get("predicted_power") or {}).items():
+        got = cp.get(gene, {}).get("pc_adjusted", {}).get("power")
+        row(f"conditional power {gene} (PC-adjusted)", value, None if got is None else float(got))
+    for gene, value in (real.get("predicted_power_unadjusted") or {}).items():
+        got = cp.get(gene, {}).get("unadjusted", {}).get("power")
+        row(f"conditional power {gene} (unadjusted)", value, None if got is None else float(got))
+    for side, values in (real.get("predicted_lambda_gc") or {}).items():
+        for key, value in values.items():
+            row(f"predicted lambda_GC {side} {key}", value, _recomputed_lambda(pred, side, key))
+    if not rows:
+        raise ValueError("acceptance.real declares no predictions to check")
+    return {
+        "what": "integrity check before any phenotype: declared predictions recomputed "
+        "from the genotypes; not an acceptance criterion",
+        "tolerance": tol,
+        "passed": all(r["ok"] for r in rows),
+        "checks": rows,
+    }
 
 
 # --- step e: power redraws at the sentinels, and the sensitivity scan ------------
@@ -986,6 +1161,13 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--n-redraws", type=int, default=None)
     p.add_argument("--out", required=True)
 
+    p = sub.add_parser(
+        "check-declared", help="step e integrity check: recomputed vs declared predictions"
+    )
+    p.add_argument("--config", default=None)
+    p.add_argument("--predictions", required=True)
+    p.add_argument("--out", required=True)
+
     p = sub.add_parser("het-summary")
     p.add_argument("--het", required=True)
     p.add_argument("--out", required=True)
@@ -1086,6 +1268,19 @@ def main(argv: list[str] | None = None) -> int:
             )
         for gene in res["not_testable"]:
             print(f"{gene}: {NOT_TESTABLE}")
+        if res.get("null_distribution"):
+            nd, pp = res["null_distribution"], res["pass_probability"]
+            for side in ("unadjusted", "pc_adjusted"):
+                x = nd[side]["lambda_gc"]
+                print(
+                    f"observed lambda_GC {side}, predictive: median {x['median']:.4f}, "
+                    f"1st-99th [{x['q01']:.4f}, {x['q99']:.4f}]"
+                )
+            for k, v in pp["per_criterion"].items():
+                print(f"P(pass) {k}: {v:.4f}")
+            for gene, c in pp["power_calibration"].items():
+                print(f"P(pass) power calibration {gene}: {c['if_prediction_exact']:.6f}")
+            print(f"P(pass) all gated criteria: {pp['all_gated_criteria']:.4f}")
         print(f"wrote {a.out}")
     elif a.cmd == "power-redraws":
         config = load_config(a.config)
@@ -1108,6 +1303,21 @@ def main(argv: list[str] | None = None) -> int:
                 f"{r['predicted_power_recomputed']:.4f}"
             )
         print(f"wrote {a.out}")
+    elif a.cmd == "check-declared":
+        res = check_declared(load_config(a.config), json.loads(Path(a.predictions).read_text()))
+        redact.write_record(a.out, json.dumps(res, indent=2) + "\n")
+        for r in res["checks"]:
+            got = "missing" if r["recomputed"] is None else f"{r['recomputed']:.6f}"
+            print(
+                f"{'ok  ' if r['ok'] else 'DIFF'}  {r['name']}: declared {r['declared']}, "
+                f"recomputed {got}"
+            )
+        print(
+            "integrity check:",
+            "passed" if res["passed"] else "FAILED",
+            f"(tolerance {res['tolerance']})",
+        )
+        return 0 if res["passed"] else 1
     elif a.cmd == "het-summary":
         s = het_summary(read_table(a.het))
         redact.write_record(a.out, s.to_csv(sep="\t", index=False))

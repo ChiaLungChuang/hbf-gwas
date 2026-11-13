@@ -1,0 +1,4 @@
+gene	rsid	table_chromosome	table_position	effect_allele	other_allele	found_by	id	chrom	pos	ref	alt	position_matches_table	alleles_match_table
+BCL11A	rs1427407	2	60718043	T	G	rsid	rs1427407	2	60718043.0	T	G	True	True
+HBS1L-MYB	rs9399137	6	135419018	C	T	rsid	rs9399137	6	135419018.0	T	C	True	True
+HBB cluster	rs7482144	11	5276169	A	G	not found							

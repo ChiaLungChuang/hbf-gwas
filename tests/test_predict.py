@@ -293,3 +293,62 @@ def test_predicted_lambda_with_a_fixed_shift_matches_observed(lam_scenario):
     se = observed.std(ddof=1) / np.sqrt(40)
     assert abs(observed.mean() - pred["mean"]) < 3 * se + 0.01, (observed.mean(), pred)
     assert pred["shift_mode"] == "fixed"
+
+
+# --- step d amendment: predictive distribution of the null statistics ------------------
+
+
+def test_calibration_pass_probability_is_the_binomial_window():
+    from scipy import stats
+
+    p = predict.prob_calibration_passes(0.1694, 0.1694, 2000, 0.05)
+    lo, hi = int(np.ceil((0.1694 - 0.05) * 2000)), int(np.floor((0.1694 + 0.05) * 2000))
+    want = stats.binom.cdf(hi, 2000, 0.1694) - stats.binom.cdf(lo - 1, 2000, 0.1694)
+    assert p == pytest.approx(want)
+    assert p > 0.999999
+    # far from the prediction it fails
+    assert predict.prob_calibration_passes(0.5, 0.1694, 2000, 0.05) < 1e-12
+
+
+def test_prob_in_interval_matches_the_normal_cdf():
+    from scipy import stats
+
+    got = predict.prob_in_interval([1.0, 1.0], [0.01, 0.01], 0.99, 1.02)
+    assert got == pytest.approx(stats.norm.cdf(2) - stats.norm.cdf(-1))
+    assert predict.prob_in_interval([1.0], [0.01], None, 1.0) == pytest.approx(0.5)
+
+
+def test_null_distribution_is_calibrated_on_simulated_genotypes():
+    # Small version of scripts/check_null_prediction.py: the observed lambda_GC
+    # of fresh phenotypes falls inside the predicted 5th-95th percentile about
+    # 90% of the time (here: 200 phenotypes, so 0.80-0.97 is accepted).
+    from hbfgwas import assoc, simulate
+
+    rng = np.random.default_rng(11)
+    sizes = [60, 50, 70, 55]
+    sim = simulate.simulate_genotypes(sizes, 0.02, rng, n_variants=6000)
+    g = sim.genotypes.astype(float)
+    pop = sim.pop
+    shift = np.array([0.5, -0.4, 0.1, -0.2])[pop]
+    shift = (shift - shift.mean()) / shift.std() * np.sqrt(0.2)
+    noise_var = 0.8
+    pcs = assoc.pca(g, 4).pcs
+    ind = (pop[:, None] == np.arange(4)[None, :]).astype(float)
+    pred = predict.predicted_null_distribution(
+        g[:, :3000],
+        shift,
+        noise_var,
+        np.hstack([ind, pcs]),
+        pcs,
+        n_draws=400,
+        rng=np.random.default_rng(12),
+        n_effective=6000,
+    )
+    y = shift[:, None] + rng.standard_normal((g.shape[0], 200)) * np.sqrt(noise_var)
+    res = assoc.linear_assoc(g, y)
+    lam = np.array([assoc.lambda_gc(res.p[:, r]) for r in range(200)])
+    q = pred["unadjusted"]["lambda_gc"]
+    inside = np.mean((lam >= q["q05"]) & (lam <= q["q95"]))
+    print("inside q05-q95:", inside, q)
+    assert 0.80 <= inside <= 0.97
+    assert pred["unadjusted"]["lambda_gc"]["q01"] < pred["unadjusted"]["lambda_gc"]["q99"]

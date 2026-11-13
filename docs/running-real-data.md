@@ -101,8 +101,14 @@ computed from the real genotypes and PCs before any phenotype is drawn.
 Before any phenotype exists, run
 
 ```bash
-scripts/03c_prereg_predictions.sh   # $RUN_DIR/prereg_predictions.json
+scripts/03d_sensitivity_pca.sh      # PCs without config sensitivity.exclude_samples (NA20314)
+scripts/03c_prereg_predictions.sh   # $RUN_DIR/prereg_predictions.json (+ _sensitivity.json)
 ```
+
+The shift per population is fixed in `real_data_simulation.population_shift`
+(declared before the predictions; D-038), and `config/step_e_seed.yaml`
+stays `seed: null` until after the tag (D-039). The step d record of
+2026-11-12 is in `runs/2026-11-12-stepd/`.
 
 It writes, from the real genotypes and PCs:
 - the conditional power of each testable sentinel, and which loci the sim-v3
@@ -140,7 +146,12 @@ RUN_DIR=runs/$(date -u +%Y-%m-%d)-stepe PYTHON=.venv/bin/python scripts/step_e.s
 - the step e seed is filled;
 - the population shift is declared;
 - the PCA (03) and the sensitivity PCA (03d) exist;
-- `$RUN_DIR/results.json` does not exist yet (step e runs once).
+- `$RUN_DIR/results.json` does not exist yet (step e runs once);
+- **integrity check:** each locus's conditional power and the predicted
+  lambda_GC, recomputed from the genotypes (03c, primary only, into
+  `$RUN_DIR/integrity/`), equal the values declared in `acceptance.real`
+  within 1e-4. The result is in `$RUN_DIR/integrity_check.json`. This is not
+  an acceptance criterion (D-057).
 
 It then runs, in order:
 - `04_assoc.sh`: simulated phenotype; plink2 `--glm` without and with the 10 PCs; concordance subset.

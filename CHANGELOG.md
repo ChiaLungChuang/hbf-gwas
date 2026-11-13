@@ -143,6 +143,23 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   `_common.sh` (`require_step_e_ready`). The fixed-shift code, seed slot and
   sensitivity PCA, written for step d (`a2bbb96`, `67a8df2`), now arrive with
   this PR.
+- Step d (proposed pre-registration): exact population shift (seeded draw,
+  declared first), empty step e seed slot (`config/step_e_seed.yaml`), NA20314
+  sensitivity PCA (`03d`) and predictions, real-data criteria real-v1 in
+  `acceptance.real`; predictions in `runs/2026-11-12-stepd/` (no phenotype).
+- Step d amendment (2026-11-12, the user's decisions, before any real-data
+  phenotype existed; D-048 to D-050):
+  - "unadjusted lambda_GC > 1.2" is replaced by the pre-stated 1st-99th
+    percentile prediction interval [1.1248, 1.2875];
+  - every gated criterion has a pass probability (all together 0.98; the
+    interval criterion 0.98, flagged below 0.99);
+  - BCL11A stays reported, not gated.
+
+  New `predict.predicted_null_distribution`, with the pass probabilities in
+  `pipeline.prereg_predictions`. Predictions were rerun on the real genotypes
+  in `runs/2026-11-12-stepd-amend/` (no phenotype; logs redacted).
+  `scripts/check_null_prediction.py` checks the prediction on simulated
+  genotypes. The original step d records are unchanged.
 
 ### Repository and CI
 - CI minutes (2026-11-12, the user's request after the monthly limit was
@@ -180,3 +197,22 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   pre-registration is now the last PR, after the step e code. The new PRs
   #38-#44 replace #32-#37 and #36. `docs/handoff.md` is rewritten with the
   new merge order, which PR replaces which, and the decisions still open.
+- Review decisions (2026-11-12, by the user, before any real-data
+  phenotype; D-051 to D-056, D-060):
+  - the lambda interval and its pass probability accepted;
+  - D-049's assumptions accepted;
+  - flag 2 unchanged;
+  - D-034 and D-036 (Claude's decisions) approved;
+  - D-037 approved as is (a README limitation now states it);
+  - full CI on main kept;
+  - reporting figures, the claims audit and publication decisions deferred
+    until after step e; the reviewer summary dropped.
+- Step e integrity check (D-057): `step_e.sh` recomputes the declared
+  predictions (03c, primary only; `PREREG_SKIP_SENSITIVITY=1`) and
+  `pipeline check-declared` stops it before any phenotype if any differs by
+  more than 1e-4.
+- Pinned dependencies (D-058): `requirements/constraints.txt` for Python
+  3.11 and 3.12, used by CI, the plink2 action and `rebuild.sh`, and checked
+  by `tests/test_dependencies.py`.
+- Step e benchmark on simulated genotypes of the real size (D-059):
+  `scripts/benchmark_step_e.py`, `runs/2026-11-12-benchmark/`.

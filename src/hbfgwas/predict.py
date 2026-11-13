@@ -287,3 +287,167 @@ def predicted_lambda(
             "2.333 * lambda / sqrt(M) (lambda_sampling_sd)"
         ),
     }
+
+
+# --- predictive distribution of the null statistics (step d amendment) ------------
+
+
+def _mixture_median_block(delta2: np.ndarray, iters: int = 48) -> np.ndarray:
+    """Median of the equal-weight noncentral chi2(1, delta2[:, b]) mixture, per column."""
+    from scipy.special import ndtr
+
+    d = np.sqrt(np.maximum(np.asarray(delta2, dtype=float), 0.0))
+    lo = np.zeros(d.shape[1])
+    hi = (np.max(d, axis=0) + 10.0) ** 2
+    for _ in range(iters):
+        mid = 0.5 * (lo + hi)
+        r = np.sqrt(mid)[None, :]
+        cdf = np.mean(ndtr(r - d) - ndtr(-r - d), axis=0)
+        below = cdf < 0.5
+        lo = np.where(below, mid, lo)
+        hi = np.where(below, hi, mid)
+    return 0.5 * (lo + hi)
+
+
+def _null_stats(g_r, sd_g, s_r, nonshift, z_crit, idx=None):
+    """lambda_GC and expected type I error per column of s_r (residualised fixed parts)."""
+    from scipy.special import ndtr
+
+    n = g_r.shape[0]
+    if idx is not None:
+        g_r, sd_g = g_r[:, idx], sd_g[idx]
+    var_y_r = nonshift + s_r.var(axis=0)
+    tau2 = nonshift / var_y_r
+    delta = np.sqrt(n) * ((g_r.T @ s_r) / n) / sd_g[:, None] / np.sqrt(var_y_r)[None, :]
+    tau = np.sqrt(tau2)[None, :]
+    lam = tau2 * _mixture_median_block(delta**2 / tau2[None, :]) / MEDIAN_CHI2_1DF
+    t1 = np.mean(ndtr((-z_crit - delta) / tau) + 1.0 - ndtr((z_crit - delta) / tau), axis=0)
+    return lam, t1
+
+
+def predicted_null_distribution(
+    genotypes,
+    fixed,
+    noise_var: float,
+    structure,
+    pcs,
+    n_draws: int = 2000,
+    rng: np.random.Generator | None = None,
+    n_effective: int | None = None,
+    type1_alpha: float = 0.05,
+    n_bootstrap: int = 30,
+    block: int = 50,
+) -> dict:
+    """Predictive distribution of lambda_GC and type I error, before any phenotype.
+
+    The step e phenotype is ``y = fixed + e``. ``fixed`` (n,) is set once the
+    genotypes and the pre-registered shift are set: planted effects plus the
+    population shift. ``e ~ N(0, noise_var I)`` is the only random part. Its
+    projection on ``structure`` (n, k), the population indicators and the PCs,
+    is drawn exactly in each of ``n_draws`` draws and added to ``fixed``. The
+    remainder acts on each null variant as independent noise, so its t statistic
+    is ~ N(delta_jb, tau_b^2) (see ``_lambdas``). Per draw and per side
+    (without and with the PCs as covariates):
+
+    * lambda_b, the median of that chi-square mixture / 0.4549;
+    * type1_b, the mean over variants of P(|t| > z_(1 - alpha/2)).
+
+    The observed statistics differ from these by estimation noise, added once
+    per draw as a normal deviate:
+
+    * from taking a median (or fraction) over a finite number of variants:
+      ``lambda_sampling_sd(lambda, n_effective)`` and
+      sqrt(t1 (1 - t1) / n_effective);
+    * from predicting with a sample of null variants: the bootstrap SD over
+      variants, at the median draw.
+
+    Returns per-draw arrays (``*_draws`` without estimation noise, ``*_obs``
+    with it) and quantile summaries of the ``*_obs`` distributions.
+    """
+    rng = rng if rng is not None else np.random.default_rng(0)
+    g = np.asarray(genotypes, dtype=float)
+    g = g[:, g.var(axis=0) > 0]
+    n, m = g.shape
+    f = np.asarray(fixed, dtype=float)
+    phenotype_var = float(f.var() + noise_var)
+    basis = _covariate_basis(n, structure)  # [1, structure], orthonormal
+    z = rng.standard_normal((basis.shape[1], n_draws))
+    eff = f[:, None] + np.sqrt(noise_var) * (basis @ z)
+    s = eff - eff.mean(axis=0)
+    nonshift = phenotype_var - s.var(axis=0)
+    if np.any(nonshift <= 0):
+        raise ValueError("the fixed part and the drawn noise exceed the phenotype variance")
+    z_crit = float(stats.norm.ppf(1 - type1_alpha / 2))
+    n_eff = int(n_effective) if n_effective else m
+    out: dict = {
+        "n_draws": int(n_draws),
+        "n_null_variants": int(m),
+        "n_effective": n_eff,
+        "noise_var": float(noise_var),
+        "fixed_var": float(f.var()),
+        "structure_dim": int(basis.shape[1]),
+        "type1_alpha": type1_alpha,
+    }
+    eps = rng.standard_normal((2, n_draws))  # estimation noise, shared by both sides
+    boot_idx = [rng.integers(0, m, m) for _ in range(n_bootstrap)]
+    for side, cov in (("unadjusted", None), ("pc_adjusted", pcs)):
+        q = _covariate_basis(n, cov)
+        g_r = _residualise(g, q)
+        sd_g = np.sqrt(np.sum(g_r**2, axis=0) / n)
+        s_r = _residualise(s, q)
+        lam = np.empty(n_draws)
+        t1 = np.empty(n_draws)
+        for a in range(0, n_draws, block):
+            sl = slice(a, min(a + block, n_draws))
+            lam[sl], t1[sl] = _null_stats(g_r, sd_g, s_r[:, sl], nonshift[sl], z_crit)
+        b_mid = int(np.argsort(lam)[n_draws // 2])
+        boots = [
+            _null_stats(g_r, sd_g, s_r[:, [b_mid]], nonshift[[b_mid]], z_crit, idx)
+            for idx in boot_idx
+        ]
+        boot_lam_sd = float(np.std([b[0][0] for b in boots], ddof=1))
+        boot_t1_sd = float(np.std([b[1][0] for b in boots], ddof=1))
+        lam_sd = np.sqrt(
+            np.array([lambda_sampling_sd(x, n_eff) for x in lam]) ** 2 + boot_lam_sd**2
+        )
+        t1_sd = np.sqrt(t1 * (1 - t1) / n_eff + boot_t1_sd**2)
+        lam_obs = lam + lam_sd * eps[0]
+        t1_obs = t1 + t1_sd * eps[1]
+        out[side] = {
+            "lambda_draws": lam,
+            "lambda_sd": lam_sd,
+            "lambda_obs": lam_obs,
+            "type1_draws": t1,
+            "type1_sd": t1_sd,
+            "type1_obs": t1_obs,
+            "bootstrap_sd": {"lambda": boot_lam_sd, "type1": boot_t1_sd},
+            "lambda_gc": _quantile_summary(lam_obs),
+            "type1_error": _quantile_summary(t1_obs),
+        }
+    return out
+
+
+def _quantile_summary(x) -> dict:
+    x = np.asarray(x, dtype=float)
+    qs = {"q01": 0.01, "q05": 0.05, "median": 0.5, "q95": 0.95, "q99": 0.99}
+    out = {k: float(np.quantile(x, v)) for k, v in qs.items()}
+    out["mean"] = float(x.mean())
+    return out
+
+
+def prob_in_interval(draws, sd, lo: float | None, hi: float | None) -> float:
+    """P(observed in [lo, hi]) when observed ~ N(draw, sd^2), averaged over draws."""
+    d, s = np.asarray(draws, dtype=float), np.asarray(sd, dtype=float)
+    up = stats.norm.cdf((hi - d) / s) if hi is not None else 1.0
+    dn = stats.norm.cdf((lo - d) / s) if lo is not None else 0.0
+    return float(np.mean(up - dn))
+
+
+def prob_calibration_passes(p_true: float, predicted: float, n: int, tol: float) -> float:
+    """P(|X / n - predicted| <= tol) for X ~ Binomial(n, p_true): the power calibration."""
+    lo = int(np.ceil((predicted - tol) * n - 1e-9))
+    hi = int(np.floor((predicted + tol) * n + 1e-9))
+    lo, hi = max(lo, 0), min(hi, n)
+    if hi < lo:
+        return 0.0
+    return float(stats.binom.cdf(hi, n, p_true) - stats.binom.cdf(lo - 1, n, p_true))

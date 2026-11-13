@@ -1,0 +1,126 @@
+{
+  "computed_before_any_phenotype": true,
+  "n_samples": 651,
+  "excluded_samples": [
+    "NA20314"
+  ],
+  "alpha": 5e-08,
+  "shift_mode": "fixed",
+  "population_shift": {
+    "ACB": 0.646472,
+    "ASW": -0.391917,
+    "ESN": 0.06668,
+    "GWD": -0.391551,
+    "LWK": -0.559369,
+    "MSL": 0.633422,
+    "YRI": -0.016644
+  },
+  "shift_var_realised": 0.20007086142216898,
+  "population_counts": {
+    "ACB": 95,
+    "ASW": 54,
+    "ESN": 99,
+    "GWD": 113,
+    "LWK": 97,
+    "MSL": 85,
+    "YRI": 108
+  },
+  "shift_var_fraction": 0.2,
+  "required_if_predicted_power_at_least": 0.99,
+  "conditional_power": {
+    "BCL11A": {
+      "pc_adjusted": {
+        "power": 0.989702093783392,
+        "power_mc_se": 0.0,
+        "beta": 0.456435,
+        "expected_beta": 0.46077168235230187,
+        "leakage": 0.0043366823523018905,
+        "genotype_variance_kept": 0.9490964914785506,
+        "mean_noncentrality": 8.165002269333353,
+        "mean_effective_critical_t": 5.821396083390708,
+        "noise_var": 0.6996949663675608,
+        "df": 639,
+        "critical_t": 5.517507518858032,
+        "n_shift_draws": 0,
+        "shift_mode": "fixed"
+      },
+      "unadjusted": {
+        "power": 0.9933351374168297,
+        "power_mc_se": 0.0,
+        "beta": 0.456435,
+        "expected_beta": 0.4604540007269826,
+        "leakage": 0.0040190007269826356,
+        "genotype_variance_kept": 1.0000000000000016,
+        "mean_noncentrality": 8.83998766652069,
+        "mean_effective_critical_t": 6.329575458611483,
+        "noise_var": 0.6996949663675608,
+        "df": 649,
+        "critical_t": 5.51647704931512,
+        "n_shift_draws": 0,
+        "shift_mode": "fixed"
+      },
+      "effect_allele_freq": 0.23886328725038403,
+      "required": false
+    },
+    "HBS1L-MYB": {
+      "pc_adjusted": {
+        "power": 0.16445503254545557,
+        "power_mc_se": 0.0,
+        "beta": 0.571,
+        "expected_beta": 0.587164394990075,
+        "leakage": 0.01616439499007505,
+        "genotype_variance_kept": 0.9653861813124089,
+        "mean_noncentrality": 4.9973173681558105,
+        "mean_effective_critical_t": 5.9895758629317,
+        "noise_var": 0.6996949663675608,
+        "df": 639,
+        "critical_t": 5.517507518858032,
+        "n_shift_draws": 0,
+        "shift_mode": "fixed"
+      },
+      "unadjusted": {
+        "power": 0.026022386727994985,
+        "power_mc_se": 0.0,
+        "beta": 0.571,
+        "expected_beta": 0.5862373918563093,
+        "leakage": 0.015237391856309346,
+        "genotype_variance_kept": 1.0000000000000016,
+        "mean_noncentrality": 4.561576511031802,
+        "mean_effective_critical_t": 6.538506573713266,
+        "noise_var": 0.6996949663675608,
+        "df": 649,
+        "critical_t": 5.51647704931512,
+        "n_shift_draws": 0,
+        "shift_mode": "fixed"
+      },
+      "effect_allele_freq": 0.03917050691244239,
+      "required": false
+    }
+  },
+  "not_testable": [
+    "HBB cluster"
+  ],
+  "predicted_lambda_gc": {
+    "unadjusted": {
+      "median": 1.1984162458946788,
+      "q05": 1.144377704539544,
+      "q95": 1.2690195216592417,
+      "mean": 1.2000497366364757,
+      "n_variants": 20000,
+      "n_shift_draws": 200,
+      "shift_mode": "fixed",
+      "note": "q05-q95 reflect the random shift and noise means only; estimating lambda_GC as a median over M independent variants adds an SD of about 2.333 * lambda / sqrt(M) (lambda_sampling_sd)"
+    },
+    "pc_adjusted": {
+      "median": 1.0044590103911832,
+      "q05": 1.0028292818100752,
+      "q95": 1.00626565493045,
+      "mean": 1.0045129554904422,
+      "n_variants": 20000,
+      "n_shift_draws": 200,
+      "shift_mode": "fixed",
+      "note": "q05-q95 reflect the random shift and noise means only; estimating lambda_GC as a median over M independent variants adds an SD of about 2.333 * lambda / sqrt(M) (lambda_sampling_sd)"
+    }
+  },
+  "n_null_variants": 20000
+}

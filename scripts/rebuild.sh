@@ -6,7 +6,8 @@
 #
 # It clones the committed HEAD into a new temporary directory (uncommitted
 # changes, data/ and any existing .venv are not used). Then it creates a new
-# virtualenv without the pip cache, installs the package, and runs:
+# virtualenv without the pip cache, installs the package with the pinned
+# versions (requirements/constraints.txt), and runs:
 # - ruff and shellcheck (if installed);
 # - the forbidden-wording check on files and commit messages;
 # - every test;
@@ -28,7 +29,7 @@ git checkout --quiet "$head"
 
 "${PYTHON:-python3}" -m venv .venv
 .venv/bin/python -m pip install --quiet --no-cache-dir --upgrade pip
-.venv/bin/python -m pip install --quiet --no-cache-dir -e ".[dev]"
+.venv/bin/python -m pip install --quiet --no-cache-dir -c requirements/constraints.txt -e ".[dev]"
 
 echo "rebuild: lint"
 .venv/bin/ruff check .
@@ -41,8 +42,8 @@ else
 fi
 .venv/bin/python scripts/check_language.py --commits
 
-echo "rebuild: tests"
-.venv/bin/python -m pytest -q
+echo "rebuild: tests (installed versions must equal requirements/constraints.txt)"
+HBFGWAS_REQUIRE_LOCK=1 .venv/bin/python -m pytest -q
 
 echo "rebuild: pre-registered simulated experiment and gate"
 key=$(.venv/bin/python -m hbfgwas.pipeline config-get simulated_experiment.seed_key)

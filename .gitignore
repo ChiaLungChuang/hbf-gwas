@@ -31,3 +31,6 @@ dist/
 .DS_Store
 .idea/
 .vscode/
+
+# stray plink2 logs from commands run at the repository root (they hold the hostname)
+/*.log
