@@ -23,6 +23,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 . "$here/_common.sh"
 need "$PLINK2"
 setup_dirs
+capture_logs "$@"
 check_plink_version
 
 in="$DATA_DIR/afr_qc"
@@ -38,7 +39,7 @@ require_step_e_ready
 # (review item C, docs/decisions.md D-028).
 "$PYTHON" -m hbfgwas.pipeline sentinels --pvar "$in.pvar" --loci "$loci" \
 	--out-ids "$DATA_DIR/planted_ids.txt" --out-map "$DATA_DIR/planted_map.tsv"
-cp "$DATA_DIR/planted_map.tsv" "$RUN_DIR/planted.tsv"
+redact_to "$DATA_DIR/planted_map.tsv" "$RUN_DIR/planted.tsv"
 [ -s "$DATA_DIR/planted_ids.txt" ] || die "no sentinel variant survived QC; nothing to plant"
 plink --pfile "$in" --keep "$keep" --extract "$DATA_DIR/planted_ids.txt" --export A --out "$DATA_DIR/planted"
 save_log "$DATA_DIR/planted"

@@ -17,6 +17,7 @@ import sys
 import time
 from pathlib import Path
 
+from hbfgwas import redact
 from hbfgwas.config import load_config
 from hbfgwas.pipeline import pc_plot
 
@@ -25,10 +26,11 @@ if __name__ == "__main__":
     data_dir = Path(os.environ.get("DATA_DIR", "data/1kg"))
     run_dir = Path(os.environ.get("RUN_DIR", "runs/" + time.strftime("%Y-%m-%d", time.gmtime())))
     run_dir.mkdir(parents=True, exist_ok=True)
-    out = run_dir / "pc1_pc2_by_population.png"
-    counts = pc_plot(config, data_dir / "pca.eigenvec", data_dir / "afr_qc.psam", out)
-    (run_dir / "pc_plot_counts.json").write_text(json.dumps(counts, indent=2) + "\n")
-    print(f"wrote {out}")
-    for pop, n in counts.items():
-        print(f"  {pop}: {n}")
+    with redact.capture(run_dir, "03b_pc_plot"):
+        out = run_dir / "pc1_pc2_by_population.png"
+        counts = pc_plot(config, data_dir / "pca.eigenvec", data_dir / "afr_qc.psam", out)
+        redact.write_record(run_dir / "pc_plot_counts.json", json.dumps(counts, indent=2) + "\n")
+        print(f"wrote {out}")
+        for pop, n in counts.items():
+            print(f"  {pop}: {n}")
     sys.exit(0)

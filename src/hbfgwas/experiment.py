@@ -31,7 +31,7 @@ import numpy as np
 from scipy import stats
 
 import hbfgwas
-from hbfgwas import assoc, power, predict, simulate
+from hbfgwas import assoc, power, predict, redact, simulate
 from hbfgwas.config import DEFAULT_CONFIG
 
 
@@ -398,7 +398,8 @@ def write_outputs(
         "summary": out_dir / "sim_stratification_summary.json",
         "figure": out_dir / "sim_stratification_qq.png",
     }
-    paths["results"].write_text(json.dumps(full, indent=2) + "\n")
-    paths["summary"].write_text(json.dumps(summarize(results), indent=2) + "\n")
+    redact.write_record(paths["results"], json.dumps(full, indent=2) + "\n")
+    redact.write_record(paths["summary"], json.dumps(summarize(results), indent=2) + "\n")
+    redact.write_note(out_dir)
     make_figure(results, paths["figure"])
     return paths

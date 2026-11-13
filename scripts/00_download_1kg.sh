@@ -35,6 +35,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 need curl
 need "$PLINK2"
 setup_dirs
+capture_logs "$@"
 check_plink_version
 
 free_kb=$(df -Pk "$DATA_DIR" | awk 'NR == 2 {print $4}')
@@ -44,8 +45,11 @@ if [ "$free_kb" -lt "$need_kb" ]; then
 fi
 log "free disk in $DATA_DIR: $((free_kb / 1024 / 1024)) GB (need >= $MIN_FREE_GB GB)"
 
-manifest="$RUN_DIR/download_manifest.tsv"
+# The manifest is built in DATA_DIR and copied, redacted, into RUN_DIR after
+# every file, so a failed download still leaves its record.
+manifest="$DATA_DIR/download_manifest.tsv"
 printf 'file\turl\tdownloaded_utc\tbytes\tsha256\n' >"$manifest"
+redact_to "$manifest" "$RUN_DIR/download_manifest.tsv"
 
 # fetch URL DEST MIN_BYTES KIND   (KIND: zst | psam | idlist)
 fetch() {
@@ -76,6 +80,7 @@ fetch() {
 	esac
 	printf '%s\t%s\t%s\t%s\t%s\n' "$dest" "$url" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
 		"$bytes" "$(sha256_of "$out")" >>"$manifest"
+	redact_to "$manifest" "$RUN_DIR/download_manifest.tsv"
 	log "  $dest: $bytes bytes"
 }
 
@@ -83,11 +88,10 @@ fetch "$PGEN_URL" all_phase3.pgen.zst "$MIN_BYTES_LARGE" zst
 fetch "$PVAR_URL" all_phase3.pvar.zst "$MIN_BYTES_LARGE" zst
 fetch "$PSAM_URL" all_phase3.psam "$MIN_BYTES_SMALL" psam
 fetch "$REL_URL" deg2_phase3.king.cutoff.out.id "$MIN_BYTES_SMALL" idlist
-cp "$manifest" "$DATA_DIR/download_manifest.tsv"
 
 record_plink_version
 log "plink2: $(cat "$RUN_DIR/plink2_version.txt")"
 log "decompressing all_phase3.pgen.zst"
 (cd "$DATA_DIR" && "$PLINK2" --zst-decompress all_phase3.pgen.zst all_phase3.pgen)
 [ -s "$DATA_DIR/all_phase3.pgen" ] || die "decompression produced no all_phase3.pgen"
-log "done: manifest at $manifest"
+log "done: manifest at $RUN_DIR/download_manifest.tsv"
