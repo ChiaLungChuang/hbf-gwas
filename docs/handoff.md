@@ -15,7 +15,7 @@ Where the work stands. This version replaces the one in #43. Since then:
   - the step d amendment's rerun of those predictions.
 
   None of these forms a phenotype.
-* **Nothing was merged.** **No tag exists** on GitHub. **Step e was not
+* **I merged nothing.** You merged #30 and #31 (22:35-22:36 UTC on 12 November). `main`'s tree is identical to #31's tip `aaa2c93`, as checked, and main's CI passed on both merges. **No tag exists** on GitHub. **Step e was not
   run**, and its seed is still empty.
 * No force-push, no history rewrite, no visibility change. The repository is
   still private.
@@ -32,8 +32,8 @@ tree is what was intended.
 
 | Order | PR | What you approve by merging |
 |---|---|---|
-| 1 | #30 Locus sign-off (closes #3) | The sign-off record. D-034 is approved (D-055) and takes effect here. |
-| 2 | #31 PCA MAF and non-founder answers | The written answers. D-036 (D-054) and D-037 (D-056) are approved. |
+| 1 | #30 Locus sign-off (closes #3) | **merged by you**; D-034 approved (D-055) |
+| 2 | #31 PCA MAF and non-founder answers | **merged by you**; D-036 (D-054) and D-037 (D-056) approved |
 | 3 | #38 Step e code | `step_e.sh` and its refusals, the 2000 redraws, the NA20314 sensitivity scan (D-046) |
 | 4 | #39 CI minutes | D-042. Full CI on main stays, as you decided (D-060). |
 | 5 | #40 Log redaction | D-043; must be in before step e runs |
@@ -51,8 +51,7 @@ tree is what was intended.
 4. Go-ahead to tag `prereg-v1` after #44 merges: **open**.
 5. The step e seed: **open**. Pick any integer, after the tag.
 6. The step e code: **done** (#38).
-7. CI billing: **fixed**. #30 and #31 still show the refused runs from 12
-   November; they need a re-run (or Ready for review) before merging.
+7. CI billing: **fixed**; #30 and #31 are merged and main's CI passed.
 8. Post-merge runs on main: **keep full** (D-060).
 9.-15. Publication decisions (email, export, pinned records, name,
    `BRIEF.md`/`CLAUDE.md`, timing, LICENSE): **deferred until after step e**
