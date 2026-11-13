@@ -596,6 +596,67 @@ def _python_assoc(raw: RawGenotypes, pheno: pd.DataFrame, covar: np.ndarray | No
     return res
 
 
+# --- step e integrity check: the declared predictions, recomputed -----------------
+
+INTEGRITY_TOL = 1e-4  # declared values are rounded to 4 decimals (error <= 5e-5)
+
+
+def _recomputed_lambda(pred: dict, side: str, key: str) -> float | None:
+    """The recomputed lambda_GC quantile, from the method that produced the declared one.
+
+    The step d amendment declares quantiles of the predictive distribution of the
+    observed value (``null_distribution``); earlier predictions declared the
+    ``predicted_lambda_gc`` summary. The newer one is used when it exists.
+    """
+    nd = (pred.get("null_distribution") or {}).get(side)
+    if nd and key in nd["lambda_gc"]:
+        return float(nd["lambda_gc"][key])
+    old = (pred.get("predicted_lambda_gc") or {}).get(side) or {}
+    return float(old[key]) if key in old else None
+
+
+def check_declared(config: dict, pred: dict, tol: float = INTEGRITY_TOL) -> dict:
+    """Compare predictions recomputed from the genotypes with those declared in
+    ``acceptance.real`` (each locus's conditional power, and the predicted
+    lambda_GC). An integrity check run before any phenotype is drawn; it is not
+    an acceptance criterion.
+    """
+    real = config["acceptance"].get("real") or {}
+    rows = []
+
+    def row(name, declared, recomputed):
+        ok = recomputed is not None and abs(float(declared) - recomputed) <= tol
+        rows.append(
+            {
+                "name": name,
+                "declared": float(declared),
+                "recomputed": recomputed,
+                "difference": None if recomputed is None else recomputed - float(declared),
+                "ok": bool(ok),
+            }
+        )
+
+    cp = pred.get("conditional_power") or {}
+    for gene, value in (real.get("predicted_power") or {}).items():
+        got = cp.get(gene, {}).get("pc_adjusted", {}).get("power")
+        row(f"conditional power {gene} (PC-adjusted)", value, None if got is None else float(got))
+    for gene, value in (real.get("predicted_power_unadjusted") or {}).items():
+        got = cp.get(gene, {}).get("unadjusted", {}).get("power")
+        row(f"conditional power {gene} (unadjusted)", value, None if got is None else float(got))
+    for side, values in (real.get("predicted_lambda_gc") or {}).items():
+        for key, value in values.items():
+            row(f"predicted lambda_GC {side} {key}", value, _recomputed_lambda(pred, side, key))
+    if not rows:
+        raise ValueError("acceptance.real declares no predictions to check")
+    return {
+        "what": "integrity check before any phenotype: declared predictions recomputed "
+        "from the genotypes; not an acceptance criterion",
+        "tolerance": tol,
+        "passed": all(r["ok"] for r in rows),
+        "checks": rows,
+    }
+
+
 # --- step e: power redraws at the sentinels, and the sensitivity scan ------------
 
 
@@ -986,6 +1047,13 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--n-redraws", type=int, default=None)
     p.add_argument("--out", required=True)
 
+    p = sub.add_parser(
+        "check-declared", help="step e integrity check: recomputed vs declared predictions"
+    )
+    p.add_argument("--config", default=None)
+    p.add_argument("--predictions", required=True)
+    p.add_argument("--out", required=True)
+
     p = sub.add_parser("het-summary")
     p.add_argument("--het", required=True)
     p.add_argument("--out", required=True)
@@ -1108,6 +1176,21 @@ def main(argv: list[str] | None = None) -> int:
                 f"{r['predicted_power_recomputed']:.4f}"
             )
         print(f"wrote {a.out}")
+    elif a.cmd == "check-declared":
+        res = check_declared(load_config(a.config), json.loads(Path(a.predictions).read_text()))
+        redact.write_record(a.out, json.dumps(res, indent=2) + "\n")
+        for r in res["checks"]:
+            got = "missing" if r["recomputed"] is None else f"{r['recomputed']:.6f}"
+            print(
+                f"{'ok  ' if r['ok'] else 'DIFF'}  {r['name']}: declared {r['declared']}, "
+                f"recomputed {got}"
+            )
+        print(
+            "integrity check:",
+            "passed" if res["passed"] else "FAILED",
+            f"(tolerance {res['tolerance']})",
+        )
+        return 0 if res["passed"] else 1
     elif a.cmd == "het-summary":
         s = het_summary(read_table(a.het))
         redact.write_record(a.out, s.to_csv(sep="\t", index=False))

@@ -40,7 +40,7 @@ runs:
       shell: bash
       run: |
         plink2 --version && zstd --version && bash --version | head -1
-        python -m pip install -q pyyaml
+        python -m pip install -q -c requirements/constraints.txt pyyaml
         want=$(python -c "import yaml; c=yaml.safe_load(open('config/analysis.yaml'))['plink2']; print(c['version'], '|', c['build_date'])")
         got=$(plink2 --version | head -n 1)
         echo "config: $want"; echo "plink2: $got"

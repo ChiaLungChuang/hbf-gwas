@@ -40,7 +40,7 @@ been decided and where the work stands, and check the open GitHub issues.
 ## Commands
 
 ```bash
-/opt/homebrew/bin/python3.12 -m venv .venv && .venv/bin/pip install -e ".[dev]"
+/opt/homebrew/bin/python3.12 -m venv .venv && .venv/bin/pip install -c requirements/constraints.txt -e ".[dev]"
 .venv/bin/python -m pytest              # unit tests (plink2 tests skip without plink2)
 .venv/bin/python -m pytest -m realdata  # real-data readiness; fails until loci are signed off
 .venv/bin/ruff check . && .venv/bin/ruff format --check .

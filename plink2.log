@@ -1,0 +1,12 @@
+PLINK v2.0.0-b.1.4 M1 (7 Nov 2026)
+Options in effect:
+  --dummy
+
+Hostname: EU-L240321
+Working directory: /Users/cchuang/projects/hbf-gwas
+Start time: Thu Nov 12 17:59:19 2026
+
+Error: --dummy requires at least 2 arguments.
+For more info, try "plink2 --help <flag name>" or "plink2 --help | more".
+
+End time: Thu Nov 12 17:59:19 2026

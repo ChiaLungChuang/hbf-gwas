@@ -327,3 +327,70 @@ def test_power_redraws_refuse_without_a_count_or_a_declared_shift(tmp_path, pvar
     no_shift["real_data_simulation"]["population_shift"] = None
     with pytest.raises(ValueError, match="population_shift"):
         pipeline.power_redraws(no_shift, raw, smap, psam, _eigenvec(raw.iid), seed_file)
+
+
+# --- step e integrity check ------------------------------------------------------------
+
+
+def _declared_cfg():
+    import copy
+
+    cfg = copy.deepcopy(CFG)
+    cfg["acceptance"]["real"] = {
+        "predicted_power": {"BCL11A": 0.9896, "HBS1L-MYB": 0.1694},
+        "predicted_lambda_gc": {
+            "unadjusted": {"median": 1.2001, "q01": 1.1248, "q99": 1.2874},
+            "pc_adjusted": {"median": 1.0094},
+        },
+    }
+    return cfg
+
+
+def _recomputed(**over):
+    pred = {
+        "conditional_power": {
+            "BCL11A": {"pc_adjusted": {"power": 0.989576}},
+            "HBS1L-MYB": {"pc_adjusted": {"power": 0.169391}},
+        },
+        "predicted_lambda_gc": {
+            "unadjusted": {"median": 1.1999},
+            "pc_adjusted": {"median": 1.0045},
+        },
+        "null_distribution": {
+            "unadjusted": {"lambda_gc": {"median": 1.20012, "q01": 1.124814, "q99": 1.287446}},
+            "pc_adjusted": {"lambda_gc": {"median": 1.00941}},
+        },
+    }
+    pred.update(over)
+    return pred
+
+
+def test_integrity_check_passes_when_the_recomputed_values_match():
+    res = pipeline.check_declared(_declared_cfg(), _recomputed())
+    assert res["passed"], res
+    assert len(res["checks"]) == 6
+    assert "not an acceptance criterion" in res["what"]
+    # the newer null_distribution is used, not the older summary (1.1999)
+    row = [c for c in res["checks"] if c["name"] == "predicted lambda_GC unadjusted median"][0]
+    assert row["recomputed"] == 1.20012
+
+
+def test_integrity_check_fails_on_any_difference_or_missing_value():
+    pred = _recomputed()
+    pred["conditional_power"]["HBS1L-MYB"]["pc_adjusted"]["power"] = 0.1699
+    res = pipeline.check_declared(_declared_cfg(), pred)
+    assert not res["passed"]
+    assert [c["name"] for c in res["checks"] if not c["ok"]] == [
+        "conditional power HBS1L-MYB (PC-adjusted)"
+    ]
+    pred = _recomputed(null_distribution=None)  # no q01/q99 to compare
+    res = pipeline.check_declared(_declared_cfg(), pred)
+    bad = sorted(c["name"] for c in res["checks"] if not c["ok"])
+    assert "predicted lambda_GC unadjusted q01" in bad and not res["passed"]
+
+
+def test_integrity_check_tolerance_is_the_4_decimal_rounding():
+    assert pipeline.INTEGRITY_TOL == 1e-4
+    pred = _recomputed()
+    pred["conditional_power"]["BCL11A"]["pc_adjusted"]["power"] = 0.9896 + 1.5e-4
+    assert not pipeline.check_declared(_declared_cfg(), pred)["passed"]

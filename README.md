@@ -136,7 +136,7 @@ records with no heterozygotes are kept.
 
 ```bash
 /opt/homebrew/bin/python3.12 -m venv .venv          # any Python >= 3.11
-.venv/bin/pip install -e ".[dev]"
+.venv/bin/pip install -c requirements/constraints.txt -e ".[dev]"   # pinned versions
 .venv/bin/python -m pytest                           # unit tests; plink2 end-to-end tests skip without plink2
 .venv/bin/python scripts/run_stratification.py --out-dir /tmp/sim --figures-dir ""
 .venv/bin/python -m hbfgwas.gate --results /tmp/sim/results.json
