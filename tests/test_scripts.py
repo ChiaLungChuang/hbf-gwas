@@ -177,6 +177,17 @@ def test_assoc_refuses_without_prereg_tag(tmp_path):
 # --- end to end on the synthetic fileset (plink2) --------------------------------
 
 
+def _declared_lambda(pred: dict) -> dict:
+    """lambda_GC predictions as acceptance.real declares them (4 decimals)."""
+    out = {}
+    for side in ("unadjusted", "pc_adjusted"):
+        nd = (pred.get("null_distribution") or {}).get(side)
+        src = nd["lambda_gc"] if nd else pred["predicted_lambda_gc"][side]
+        keys = ("median", "q01", "q05", "q95", "q99") if nd else ("median", "q05", "q95")
+        out[side] = {k: round(float(src[k]), 4) for k in keys}
+    return out
+
+
 @pytest.fixture(scope="module")
 def e2e(tmp_path_factory):
     if not HAVE_TOOLS:
@@ -251,6 +262,8 @@ def e2e(tmp_path_factory):
         "predicted_power": {
             g: round(v["pc_adjusted"]["power"], 4) for g, v in pred["conditional_power"].items()
         },
+        # declared like the real ones, so step e's integrity check recomputes them
+        "predicted_lambda_gc": _declared_lambda(pred),
         "required_loci": [],
     }
     cfg_path.write_text(yaml.safe_dump(cfg, sort_keys=False))
@@ -266,6 +279,7 @@ def e2e(tmp_path_factory):
         "built": built,
         "serve": s,
         "config": cfg_path,
+        "env": env,
     }
 
 
@@ -437,6 +451,42 @@ def test_e2e_step_e_gate_judges_every_criterion(e2e):
     assert len(calib) == 3
     assert all(c["status"] == "PASS" for c in calib), calib
     assert e2e["out"]["step_e.sh"].returncode == (0 if gate["passed"] else 3)
+
+
+def test_e2e_step_e_integrity_check_passed_before_the_phenotype(e2e):
+    chk = json.loads((e2e["run"] / "integrity_check.json").read_text())
+    assert chk["passed"] and "not an acceptance criterion" in chk["what"]
+    names = [c["name"] for c in chk["checks"]]
+    assert any(n.startswith("conditional power BCL11A") for n in names)
+    assert any(n.startswith("predicted lambda_GC unadjusted") for n in names)
+    assert (e2e["run"] / "integrity" / "prereg_predictions.json").exists()
+    err = e2e["out"]["step_e.sh"].stderr
+    assert err.index("integrity check passed") < err.index("association done")
+
+
+def test_e2e_step_e_stops_before_any_phenotype_if_a_prediction_differs(e2e, tmp_path):
+    cfg = yaml.safe_load(e2e["config"].read_text())
+    gene = sorted(cfg["acceptance"]["real"]["predicted_power"])[0]
+    cfg["acceptance"]["real"]["predicted_power"][gene] = round(
+        cfg["acceptance"]["real"]["predicted_power"][gene] + 0.01, 4
+    )
+    bad = tmp_path / "tampered.yaml"
+    bad.write_text(yaml.safe_dump(cfg, sort_keys=False))
+    pheno = e2e["data"] / "pheno.tsv"
+    before = (pheno.stat().st_mtime_ns, hashlib.sha256(pheno.read_bytes()).hexdigest())
+    run = tmp_path / "run"
+    env = dict(e2e["env"], CONFIG=str(bad), RUN_DIR=str(run))
+    r = _run("step_e.sh", env)
+    assert r.returncode == 1, r.stderr
+    assert "integrity check failed" in r.stderr
+    chk = json.loads((run / "integrity_check.json").read_text())
+    assert not chk["passed"]
+    assert [c["name"] for c in chk["checks"] if not c["ok"]] == [
+        f"conditional power {gene} (PC-adjusted)"
+    ]
+    # nothing after the check ran: no phenotype, no scan
+    assert not (run / "phenotype_meta.json").exists()
+    assert (pheno.stat().st_mtime_ns, hashlib.sha256(pheno.read_bytes()).hexdigest()) == before
 
 
 def _step_e_config(tmp_path: Path, real=True, shift=True) -> Path:

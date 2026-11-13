@@ -10,6 +10,7 @@
 #
 #   HBFGWAS_LOCI_TSV=<file>   use this locus table instead of exporting loci.py
 #                             (synthetic test fileset); it must still be analysis_ready
+#   PREREG_SKIP_SENSITIVITY=1 skip the sensitivity predictions (step e's integrity check)
 #
 # In:  DATA_DIR/afr_qc.*, DATA_DIR/unrelated.id, DATA_DIR/pca.eigenvec
 # Out: RUN_DIR/prereg_predictions.json (+ _sensitivity.json), prereg_sentinels.tsv, logs/
@@ -62,6 +63,9 @@ log "predictions (no phenotype drawn): $RUN_DIR/prereg_predictions.json"
 # excluded samples, with the PCs that 03d_sensitivity_pca.sh recomputed.
 excl=$("$PYTHON" -c 'import json,sys; print(",".join(json.loads(sys.argv[1]) or []))' \
 	"$(cfg sensitivity.exclude_samples)")
+if [ "${PREREG_SKIP_SENSITIVITY:-0}" = 1 ]; then
+	excl=""  # step e's integrity check recomputes the primary predictions only
+fi
 if [ -n "$excl" ]; then
 	[ -s "$DATA_DIR/pca_sens.eigenvec" ] || die "run scripts/03d_sensitivity_pca.sh first"
 	"$PYTHON" -m hbfgwas.pipeline predictions --config "$CONFIG" \
