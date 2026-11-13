@@ -122,3 +122,24 @@ reasons are in [docs/decisions.md](docs/decisions.md).
   but is Claude's unapproved addition (D-036); NA20320 is plink2's only
   non-founder (its mother is on the related list), and each step's treatment
   of it (D-037).
+- Step e code (2026-11-12, the user's request; synthetic data only, no
+  phenotype on real genotypes). `scripts/step_e.sh` is the single step e
+  command. Before any phenotype it refuses unless:
+  - `prereg-v1` exists here and on GitHub;
+  - the config is unchanged since the tag;
+  - `acceptance.real` is filled;
+  - the locus table is signed off;
+  - the seed is filled;
+  - the shift is declared;
+  - the PCAs exist;
+  - no earlier `results.json` exists.
+
+  It then runs 04, `04b_power_redraws.sh` (redraws at the sentinels for the
+  gated power calibration, `pipeline.power_redraws`),
+  `04c_sensitivity_scan.sh` (without NA20314, PCs from 03d), 05 and the gate.
+  `05_report.py` adds empirical power, the recomputed prediction and the
+  sensitivity section, and refuses if the calibration is pre-registered but
+  the redraws are missing. The preconditions shared with 04 moved to
+  `_common.sh` (`require_step_e_ready`). The fixed-shift code, seed slot and
+  sensitivity PCA, written for step d (`a2bbb96`, `67a8df2`), now arrive with
+  this PR.

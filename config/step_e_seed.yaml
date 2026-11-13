@@ -1,0 +1,9 @@
+# Step e seed: ONE integer. It is spawned (numpy SeedSequence(seed).spawn(3)),
+# in this order, into: the genome-wide-scan phenotype noise, the 2000 power
+# redraws, and the concordance variant sample. The non-genetic shift is fixed
+# in config/analysis.yaml and uses no random numbers.
+#
+# Empty on purpose. It is filled only AFTER the step d pre-registration is
+# merged and tagged prereg-v1, so the history shows the criteria came first.
+# scripts/04_assoc.sh and the step e command refuse to run while it is null.
+seed: null

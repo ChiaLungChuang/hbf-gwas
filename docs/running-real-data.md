@@ -111,16 +111,44 @@ git tag prereg-v1 <merge commit>
 git push origin prereg-v1
 ```
 
-## 4. Association and report
+## 4. Step e: one command, run once
+
+After the step d PR is merged, `prereg-v1` is tagged and pushed, and the step e
+seed is committed to `config/step_e_seed.yaml` and pushed:
 
 ```bash
-scripts/04_assoc.sh    # refuses to run without sign-off, the prereg-v1 tag, and acceptance.real
-.venv/bin/python scripts/05_report.py
-.venv/bin/python -m hbfgwas.gate --experiment real --results "$RUN_DIR/results.json"
+RUN_DIR=runs/$(date -u +%Y-%m-%d)-stepe PYTHON=.venv/bin/python scripts/step_e.sh
 ```
 
-`05_report.py` writes `results.json` (lambda_GC both ways, type I error on
-variants more than 1 Mb from a planted sentinel, locus recovery against
-predicted power, Python-vs-plink2 concordance), `qq_real.png` and
-`pc1_pc2_by_population.png`. Commit them under `runs/<date>/`. If the gate
-fails a criterion, change nothing and report it.
+`step_e.sh` refuses to start, before any phenotype is simulated, unless:
+- `prereg-v1` exists here and on GitHub, pointing to the same commit;
+- `config/analysis.yaml` is unchanged since the tag;
+- `acceptance.real` is filled;
+- the locus table passes the analysis check;
+- the step e seed is filled;
+- the population shift is declared;
+- the PCA (03) and the sensitivity PCA (03d) exist;
+- `$RUN_DIR/results.json` does not exist yet (step e runs once).
+
+It then runs, in order:
+- `04_assoc.sh`: simulated phenotype; plink2 `--glm` without and with the 10 PCs; concordance subset.
+- `04b_power_redraws.sh`: `acceptance.real.power_calibration.n_redraws` phenotype redraws (2000). Each redraw keeps the same planted effects and the same fixed shift, with new noise from the seed's child `power_reps`. Each is tested at the sentinels only, with and without PCs. Writes `power_redraws.json`.
+- `04c_sensitivity_scan.sh`: the same phenotype without `sensitivity.exclude_samples` (NA20314), with the PCs recomputed without it by 03d. Never gated.
+- `05_report.py`: writes `results.json`:
+  - lambda_GC both ways;
+  - type I error on variants more than 1 Mb from a planted sentinel;
+  - per locus: the declared prediction, the empirical power over the redraws, and the single-scan p-value;
+  - the sensitivity section;
+  - the Python-vs-plink2 concordance.
+
+  It also draws `qq_real.png` and `pc1_pc2_by_population.png`.
+- `python -m hbfgwas.gate --experiment real`: writes `gate.json`.
+
+Exit status:
+- 0: every gated criterion passed;
+- 3: a gated criterion failed;
+- 4: the gate passed but the concordance check failed;
+- 1: refused, or an error.
+
+Commit `$RUN_DIR` under `runs/<date>-stepe/`. If the gate fails a criterion,
+change nothing and report it.

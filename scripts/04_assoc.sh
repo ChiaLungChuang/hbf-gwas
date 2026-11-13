@@ -5,7 +5,8 @@
 # noise); 1000 Genomes has no HbF phenotype.
 #
 # Refuses to run unless:
-#   * every value in the locus table is verified by the user (src/hbfgwas/loci.py), and
+#   * the locus table passes the analysis check (src/hbfgwas/loci.py, signed off by the user),
+#   * the step e seed (config/step_e_seed.yaml) is filled and the population shift is declared, and
 #   * the tag prereg-v1 exists, config/analysis.yaml is unchanged since it, and
 #     acceptance.real is filled in (Phase 2 step d).
 # Overrides, for the synthetic test fileset only:
@@ -28,26 +29,8 @@ in="$DATA_DIR/afr_qc"
 keep="$DATA_DIR/unrelated.id"
 n_pcs=$(cfg pca.n_pcs)
 
-# --- preconditions ---------------------------------------------------------
-loci="${HBFGWAS_LOCI_TSV:-}"
-if [ -n "$loci" ]; then
-	log "WARNING: HBFGWAS_LOCI_TSV is set; using $loci instead of exporting src/hbfgwas/loci.py"
-	"$PYTHON" -m hbfgwas.pipeline loci-ready --loci "$loci" ||
-		die "the locus table $loci is not signed off (analysis_ready is false for a locus)"
-else
-	loci="$DATA_DIR/loci.tsv"
-	"$PYTHON" -m hbfgwas.loci export --require-analysis-ready --out "$loci" ||
-		die "the locus table is not signed off by the user (python -m hbfgwas.loci check --analysis)"
-fi
-if [ "${HBFGWAS_SKIP_PREREG_CHECK:-0}" = 1 ]; then
-	log "WARNING: HBFGWAS_SKIP_PREREG_CHECK=1; not checking the prereg-v1 tag"
-else
-	git rev-parse -q --verify refs/tags/prereg-v1 >/dev/null ||
-		die "tag prereg-v1 does not exist: real-data criteria must be pre-registered first"
-	git diff --quiet prereg-v1 -- "$CONFIG" ||
-		die "$CONFIG differs from the prereg-v1 tag"
-	[ "$(cfg acceptance.real)" != "null" ] || die "acceptance.real is empty in $CONFIG"
-fi
+# --- preconditions (scripts/_common.sh) --------------------------------------
+require_step_e_ready
 
 # --- planted variants: sentinels present after QC ----------------------------
 # A sentinel absent from the callset (by rsID and by position) or removed by QC
@@ -60,7 +43,7 @@ cp "$DATA_DIR/planted_map.tsv" "$RUN_DIR/planted.tsv"
 plink --pfile "$in" --keep "$keep" --extract "$DATA_DIR/planted_ids.txt" --export A --out "$DATA_DIR/planted"
 save_log "$DATA_DIR/planted"
 
-"$PYTHON" -m hbfgwas.pipeline simulate-phenotype --config "$CONFIG" \
+"$PYTHON" -m hbfgwas.pipeline simulate-phenotype --config "$CONFIG" --seed-file "$seed_file" \
 	--raw "$DATA_DIR/planted.raw" --map "$DATA_DIR/planted_map.tsv" --psam "$in.psam" \
 	--out "$DATA_DIR/pheno.tsv" --meta "$RUN_DIR/phenotype_meta.json"
 
@@ -75,7 +58,8 @@ save_log "$DATA_DIR/glm_pc"
 
 # --- subset for the Python reference check (05_report.py) --------------------
 "$PYTHON" -m hbfgwas.pipeline sample-ids --pvar "$in.pvar" \
-	--n "$(cfg concordance.n_random_variants)" --seed "$(cfg seeds.real_concordance_sample)" \
+	--n "$(cfg concordance.n_random_variants)" \
+	--seed "$("$PYTHON" -m hbfgwas.pipeline seed-child --seed-file "$seed_file" --name concordance)" \
 	--include "$DATA_DIR/planted_ids.txt" --out "$DATA_DIR/concord_ids.txt"
 plink --pfile "$in" --keep "$keep" --extract "$DATA_DIR/concord_ids.txt" --export A --out "$DATA_DIR/concord"
 save_log "$DATA_DIR/concord"

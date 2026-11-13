@@ -186,6 +186,7 @@ def simulate_phenotype(
     beta: Sequence[float] | None = None,
     shift_var_fraction: float = 0.0,
     n_reps: int | None = None,
+    pop_shift: dict | None = None,
 ) -> Phenotype:
     """Simulate y = genetic + shift + noise.
 
@@ -201,6 +202,10 @@ def simulate_phenotype(
         means are drawn N(0, 1), centred, and scaled to this variance exactly
     n_reps : if given, draw this many phenotypes at once (shift and noise are
         redrawn; betas are fixed by the genotypes); outputs are (n, n_reps)
+    pop_shift : exact shift per subpopulation label (a pre-registered, fixed
+        shift, as on real genotypes). It is the same in every repetition and
+        draws no random numbers; ``shift_var_fraction`` is then ignored and
+        the realised shift variance is used for the noise variance.
     """
     g = _validate_genotypes(genotypes)
     n, k = g.shape
@@ -228,6 +233,15 @@ def simulate_phenotype(
         if betas.shape != (k,):
             raise ValueError("beta needs one value per planted variant")
 
+    fixed_shift = None
+    if pop_shift is not None:
+        missing = sorted({str(p) for p in np.unique(pop)} - {str(k) for k in pop_shift})
+        if missing:
+            raise ValueError(f"pop_shift has no value for: {', '.join(missing)}")
+        lookup = {str(k): float(v) for k, v in pop_shift.items()}
+        fixed_shift = np.array([lookup[str(p)] for p in pop])
+        shift_var_fraction = float(fixed_shift.var())
+
     raw = g @ betas
     genetic = raw - raw.mean()
     genetic_var = genetic.var()
@@ -242,7 +256,11 @@ def simulate_phenotype(
     reps = 1 if n_reps is None else int(n_reps)
     shift = np.zeros((n, reps))
     pop_means = np.zeros((labels.size, reps))
-    if shift_var_fraction > 0:
+    if fixed_shift is not None:
+        shift = np.repeat(fixed_shift[:, None], reps, axis=1)
+        lookup = {str(k): float(v) for k, v in pop_shift.items()}
+        pop_means = np.repeat(np.array([lookup[str(lab)] for lab in labels])[:, None], reps, axis=1)
+    elif shift_var_fraction > 0:
         draws = rng.standard_normal((reps, labels.size))
         shift, pop_means = scale_shift_draws(draws, idx, shift_var_fraction)
     noise = rng.standard_normal((n, reps)) * np.sqrt(noise_var)
